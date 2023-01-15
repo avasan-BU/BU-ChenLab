@@ -1,0 +1,9 @@
+list = getList("image.titles");
+print(list[0]);
+// rename windows based on order open - workaround for inconsistent
+// naming conventions
+for (i=0; i<list.length; i++){
+ selectWindow(list[i]);
+ run("Save");
+ close();
+}
