@@ -201,6 +201,11 @@ def sort_stage_pos_folders(basename_list: list,parent_output: str, stage_pos_nd:
 # In[ ]:
 
 
+print("Current config:")
+print("Image Type:", image_type)
+print("Fluorescent Images:", is_fl)
+print("Track Images:", is_track)
+
 #prompt user for the file directory. Will open as a popup window named "tk"
 tk_root = tkinter.Tk()
 print("Please open the directory that contains your .nd file")
@@ -225,18 +230,24 @@ else:
 
 # Create yaml file for image type
 create_yaml(path_output, image_type)
-
+print("Created .yaml file")
 # Create list of .nd files/experiments in the input folder
 basename_list = define_basename_list(path_input)
+print("Created basename list:", basename_list)
 
+print("Sorting images into corresponding basename folders...")
 # Sort images in input folder into Sorted/basename folder
 sort_basename_folders(basename_list, path_input, path_output)
+print("Completed!")
 
 # Extract stage position information from .nd file
 stage_pos_nd = extract_nd_info(basename_list,path_output)
+print("Extracted stage position information from .nd files")
 
+print("Sorting images in each basename folder into their corresponding stage position folders...")
 #  Sort images in each basename folder into their corresponding stage position folders
 sort_stage_pos_folders(basename_list,path_output, stage_pos_nd, image_type)
+print("Completed")
 
 
 # **Section 3: Execute woundcompute for all basename folders in the Sorted folder**
@@ -244,6 +255,7 @@ sort_stage_pos_folders(basename_list,path_output, stage_pos_nd, image_type)
 # In[ ]:
 
 
+print("Starting wound compute for each stage position...")
 for index, basename in enumerate(basename_list):
 
     for stage_pos in range(1, stage_pos_nd[index]+1):
@@ -257,4 +269,8 @@ for index, basename in enumerate(basename_list):
             print("---------ERROR OF SOME DESCRIPTION HAS HAPPENED-------")
             print(ex)
             print("------------------------------------------------------")
+
+print("Completed! Hurray!")
+
+print("Please run extract_dataset to consolidate outputs into an excel file!")
 
