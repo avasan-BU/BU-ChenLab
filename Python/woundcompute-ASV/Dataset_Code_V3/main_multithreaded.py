@@ -1,6 +1,6 @@
 # Name: Main_multithreader
 #
-# Version: 1.4
+# Version: 1.5
 #
 # Author: Anish Vasan
 #
@@ -30,18 +30,17 @@ print("Current config:")
 print("Image Type:", image_type)
 print("Fluorescent Images:", is_fl)
 print("Track Pillars:", is_pillars)
-
+print(ms_choice)
 path_input, path_output = io_function()
 
 # **Section 2: Execute functions to prepare folder structure for woundcompute** #
-
 
 # Create yaml file for image type
 create_yaml(path_output, image_type, is_fl, is_pillars)
 print("Created .yaml file")
 
 # Create list of .nd files/experiments in the input folder
-basename_list = define_basename_list(path_input)
+basename_list, is_nd = define_basename_list(path_input)
 print("Created basename list:", basename_list)
 
 # Sort images in input folder into Sorted/basename folder
@@ -50,18 +49,19 @@ sort_basename_folders(basename_list, path_input, path_output)
 print("Completed!")
 
 # Extract stage position information from .nd file
-stage_pos_nd = extract_nd_info(basename_list, path_output)
-print("Extracted stage position information from .nd files")
+stage_pos_nd, stage_pos_maps, timepoints_list = extract_nd_info(basename_list, path_output, is_nd, ms_choice)
+print("Extracted stage position information")
 
 #  Sort images in each basename folder into their corresponding stage position folders
 print("Sorting images in each basename folder into their corresponding stage position folders...")
-sort_stage_pos_folders(basename_list, path_output, stage_pos_nd, image_type)
+sort_stage_pos_folders(basename_list, path_output, stage_pos_nd, stage_pos_maps, image_type, ms_choice)
 
 # Divide tissue folders into processing groups to maximize processing power
 print("Dividing tissue folders into processing subfolders to maximize multicore performance...")
-sort_parallel_processes(basename_list, path_output, stage_pos_nd, image_type, parallels)
+sort_parallel_processes(basename_list, path_output, parallels)
 
 print("Completed")
+
 
 # **Section 3: Execute woundcomputes in parallel** #
 
