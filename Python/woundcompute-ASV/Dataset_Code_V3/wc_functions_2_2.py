@@ -30,7 +30,11 @@ def io_function() -> (str, str):
     tk_root = tkinter.Tk()
     print("Please open the directory that contains your .nd file")
     path_input = askdirectory(title='Select Input Folder with .nd file')  # shows dialog box and return the path
-    print("Inputed path:", path_input)
+    if path_input == "":
+        print("No folder selected. Program exiting.")
+        quit()
+    else:
+        print("Inputed path:", path_input)
     tk_root.destroy()
     path_output = path_input + '/Sorted'
 
@@ -198,22 +202,30 @@ def create_yaml(path: str, image_type_in: str, is_fl_in: bool, is_pillars_in: bo
         yaml.safe_dump(yaml_input_file, file, sort_keys=False)
 
 
-def define_basename_list(path_input_fn: str) -> (list, bool):
+def define_basename_list(path_input_fn: str, path_output_fn: str, ms_choice: str) -> (list, bool):
     """Given an input path as a string. Will return a list of experiment names in the input folder"""
 
     is_nd_out = False
     basename_list_fn = []
-    for file in os.listdir(path_input_fn):
-        if file.endswith('.nd'):
-            name, ext = os.path.splitext(file)
-            basename_list_fn.append(name)
-            is_nd_out = True
 
-    if not is_nd_out:
-        file_list = os.listdir(path_input_fn)
-        basename = [file.split('_') for file in file_list if file.endswith('.tif') or file.endswith('.TIF')]
-        basename = list(dict.fromkeys(["_".join([str(item1) for item1 in item[0:-2]]) for item in basename]))
-        basename_list_fn = [b for b in basename if 'thumb' not in b]
+    if ms_choice == "Cytation":
+        basename_list_fn = [name for name in os.listdir(path_input_fn) if
+                            os.path.isdir(os.path.join(path_input_fn, name))]
+        basename_list_fn = [name for name in basename_list_fn if not path_input_fn + '/' + name == path_output_fn]
+
+    else:
+        for file in os.listdir(path_input_fn):
+            if file.endswith('.nd'):
+                name, ext = os.path.splitext(file)
+                basename_list_fn.append(name)
+                is_nd_out = True
+
+        if not is_nd_out:
+            file_list = os.listdir(path_input_fn)
+            basename = [file.split('_') for file in file_list if file.endswith('.tif') or file.endswith('.TIF')]
+            basename = list(dict.fromkeys(["_".join([str(item1) for item1 in item[0:-2]]) for item in basename]))
+            basename_list_fn = [b for b in basename if 'thumb' not in b]
+
     return basename_list_fn, is_nd_out
 
 
@@ -253,15 +265,16 @@ def extract_nd_info(basename_list_fn: list, path_output_fn: str, is_nd: bool, ms
 
             if ms_choice == "Cytation":
                 positions = [file.split('_')[0] for file in file_list if
-                            file.endswith('.tif') or file.endswith('.TIF')]
+                             file.endswith('.tif') or file.endswith('.TIF')]
             else:
-                positions = [file.split('_')[-2] for file in file_list if file.endswith('.tif') or file.endswith('.TIF')]
+                positions = [file.split('_')[-2] for file in file_list if
+                             file.endswith('.tif') or file.endswith('.TIF')]
             positions = list(dict.fromkeys(positions))
             stage_positions.append(len(positions))
 
             positions = [pos[:1] + pos[1:].zfill(2) for pos in positions]
             positions.sort()
-            stage_pos_submaps = {N: position for N, position in zip(range(1, len(positions)+1), positions)}
+            stage_pos_submaps = {N: position for N, position in zip(range(1, len(positions) + 1), positions)}
             stage_pos_maps[basename_fn] = stage_pos_submaps
             print("Extracted information from files in folder")
 
@@ -269,26 +282,72 @@ def extract_nd_info(basename_list_fn: list, path_output_fn: str, is_nd: bool, ms
 
 
 # Folder Organization Functions
-def sort_stage_pos_folders(basename_list_fn: list, parent_output_fn: str, stage_pos_nd_fn: list,
+def sort_basename_folders(basename_list_fn: list, path_input_fn: str, path_output_fn: str, ms_choice: str):
+    """Given a list of experiments obtained from the .nd files in the input folder. Given input and out paths as str.
+ Creates an output folder at path_output. Copies and sorts TIFF files in path_input according to basenames in output
+ folder"""
+
+    for basename_fn in basename_list_fn:
+
+        # create folders for each expt
+        try:
+            os.makedirs(path_output_fn + '/' + basename_fn)
+        except OSError as e:
+            # If it fails, inform the user.
+            print('Error: %s - %s.' % (e.filename, e.strerror))
+
+        if ms_choice == "Cytation":
+            path_temp = path_input_fn + '/' + basename_fn
+
+            for file in os.listdir(path_temp):
+                if file.endswith('.tif' or '.TIF'):
+                    try:
+                        shutil.copy(path_temp + '/' + file, path_output_fn + '/' + basename_fn + '/' + file)
+                    except OSError as e:
+                        # If it fails, inform the user.
+                        print('Error: %s - %s.' % (e.filename, e.strerror))
+        else:
+            # copy .nd file into respective basename folder
+            if os.path.isfile(path_input_fn + '/' + basename_fn + '.nd'):
+                try:
+                    shutil.copy(path_input_fn + '/' + basename_fn + '.nd',
+                                path_output_fn + '/' + basename_fn + '/' + basename_fn + '.nd')
+                except OSError as e:
+                    # If it fails, inform the user.
+                    print('Error: %s - %s.' % (e.filename, e.strerror))
+
+            # copy TIF files to respective basename folders, excludes thumbnail files
+            for file in os.listdir(path_input_fn):
+                if file.startswith(basename_fn + '_') and not fnmatch.fnmatch(file, '*thumb*'):
+                    try:
+                        shutil.copy(path_input_fn + '/' + file, path_output_fn + '/' + basename_fn + '/' + file)
+                    except OSError as e:
+                        # If it fails, inform the user.
+                        print('Error: %s - %s.' % (e.filename, e.strerror))
+
+
+def sort_stage_pos_folders(basename_list_fn: list, parent_output_fn: str,
                            stage_pos_maps_fn: dict, image_type_fn: str, ms_choice: str):
     """Given basename list, parent output folder and number of stage positions list extracted from nd files. Sorts
     files into stage position folders"""
     # sort images into stage position folders
     for index_fn, basename_fn in enumerate(basename_list_fn):
+        filelist = os.listdir(parent_output_fn + '/' + basename_fn)
+        filelist.sort()
+        for file in filelist:
 
-        for file in os.listdir(parent_output_fn + '/' + basename_fn):
-
-            for stage_pos_fn in range(1,stage_pos_nd_fn[index_fn]+1):
+            for stage_pos_fn in range(1, len(stage_pos_maps_fn[basename_fn]) + 1):
 
                 # define input and output paths
                 path_input_fn = parent_output_fn + '/' + basename_fn
-                path_pos_output_fn = parent_output_fn + '/' + basename_fn + '/' + stage_pos_maps_fn[basename_fn][stage_pos_fn]
+                path_pos_output_fn = parent_output_fn + '/' + basename_fn + '/' + stage_pos_maps_fn[basename_fn][
+                    stage_pos_fn]
 
                 # path_pos_output_fn = parent_output_fn + '/' + basename_fn + '/' + 's' + f"{stage_pos_fn:02}"
                 # check if file belongs to current stage_pos group
 
                 if ms_choice == "Cytation":
-                    spos = file.split('_')[0]
+                    spos = file.split('_')[0][:1] + file.split('_')[0][1:].zfill(2)
                 else:
                     spos = file.split('_')[-2][:1] + file.split('_')[-2][1:].zfill(2)
 
@@ -321,8 +380,8 @@ def sort_stage_pos_folders(basename_list_fn: list, parent_output_fn: str, stage_
                             # If it fails, inform the user.
                             print('Error: %s - %s.' % (e.filename, e.strerror))
 
-
-                    # otherwise, create folder and move file into this folder. Also copy parent yaml file into this folder.
+                    # otherwise, create folder and move file into this folder. Also copy parent yaml file into this
+                    # folder.
                     else:
                         try:
                             os.makedirs(path_pos_output_fn + '/' + image_type_fn + '_images/')
@@ -335,35 +394,6 @@ def sort_stage_pos_folders(basename_list_fn: list, parent_output_fn: str, stage_
                         except OSError as e:
                             # If it fails, inform the user.
                             print('Error: %s - %s.' % (e.filename, e.strerror))
-
-
-def sort_basename_folders(basename_list_fn: list, path_input_fn: str, path_output_fn: str):
-    """Given a list of experiments obtained from the .nd files in the input folder. Given input and out paths as str.
- Creates an output folder at path_output. Copies and sorts TIFF files in path_input according to basenames in output
- folder"""
-
-    for basename_fn in basename_list_fn:
-
-        # create folders for each expt
-        os.makedirs(path_output_fn + '/' + basename_fn)
-
-        # copy .nd file into respective basename folder
-        if os.path.isfile(path_input_fn + '/' + basename_fn + '.nd'):
-            try:
-                shutil.copy(path_input_fn + '/' + basename_fn + '.nd',
-                            path_output_fn + '/' + basename_fn + '/' + basename_fn + '.nd')
-            except OSError as e:
-                # If it fails, inform the user.
-                print('Error: %s - %s.' % (e.filename, e.strerror))
-
-        # copy TIF files to respective basename folders, excludes thumbnail files
-        for file in os.listdir(path_input_fn):
-            if file.startswith(basename_fn + '_') and not fnmatch.fnmatch(file, '*thumb*'):
-                try:
-                    shutil.copy(path_input_fn + '/' + file, path_output_fn + '/' + basename_fn + '/' + file)
-                except OSError as e:
-                    # If it fails, inform the user.
-                    print('Error: %s - %s.' % (e.filename, e.strerror))
 
 
 def sort_parallel_processes(basename_list_fn: list, parent_output_fn: str, parallels_in: int):
@@ -399,7 +429,6 @@ def sort_parallel_processes(basename_list_fn: list, parent_output_fn: str, paral
         stage_pos_max = parallels_in * int(round((len(file_list) + 1) / parallels_in))
 
         if stage_pos_max < len(file_list):
-            print('overtime')
             for stage_pos_fn in range(stage_pos_max, len(file_list)):
                 # define input and output paths
                 move_loc_from = path_input_fn + '/' + file_list[stage_pos_fn]
