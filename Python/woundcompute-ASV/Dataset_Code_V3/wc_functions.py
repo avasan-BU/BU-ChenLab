@@ -1,6 +1,6 @@
 # Name: wc_functions
 #
-# Version: 2.2
+# Version: 2.5
 #
 # Author: Anish Vasan
 #
@@ -16,6 +16,7 @@ import tkinter
 import yaml
 import subprocess
 from tkinter.filedialog import askdirectory
+from tkinter import simpledialog
 import time
 from humanfriendly import format_timespan
 from woundcompute import image_analysis as ia
@@ -24,7 +25,7 @@ import sys
 
 
 # GUI Functions
-def io_function() -> (str, str):
+def io_function(section2: bool) -> (str, str):
     """Prompt user for input folder that contains a .nd file"""
     # prompt user for the file directory. Will open as a popup window named "tk"
     tk_root = tkinter.Tk()
@@ -35,21 +36,28 @@ def io_function() -> (str, str):
         quit()
     else:
         print("Inputed path:", path_input)
-    tk_root.destroy()
-    path_output = path_input + '/Sorted'
 
-    if os.path.exists(path_output):
-        path_out_new = input('Enter new output folder name')
-        path_output = path_input + '/' + path_out_new
+    if section2:
+        path_output = os.path.join(path_input, 'Sorted')
+
+        if os.path.exists(path_output):
+            path_out_new = simpledialog.askstring('Output folder', 'Enter new output folder name')
+            # path_out_new = input('Enter new output folder name')
+            if path_out_new == "":
+                print("No folder selected. Program exiting.")
+                quit()
+            path_output = os.path.join(path_input, path_out_new)
+
+        # create a new  output directory
+
         os.makedirs(path_output)
-    # create a new  output directory
     else:
-        os.makedirs(path_output)
-
+        path_output = []
+    tk_root.destroy()
     return path_input, path_output
 
 
-def input_gui() -> (str, bool, int, str):
+def input_gui() -> (str, bool, int, str, bool, bool, bool):
     # Create object
     window = tkinter.Tk()
 
@@ -126,6 +134,7 @@ def input_gui() -> (str, bool, int, str):
     # Menu for Pillar Tracking
     # Create checkbox
     option_track_pillars = tkinter.BooleanVar()
+    option_track_pillars.set(True)
     c1 = tkinter.Checkbutton(window, text='Track Pillars', variable=option_track_pillars, onvalue=True, offvalue=False)
     c1.pack()
 
@@ -133,15 +142,23 @@ def input_gui() -> (str, bool, int, str):
     # Create checkbox
     option_section2 = tkinter.BooleanVar()
     option_section3 = tkinter.BooleanVar()
+    option_section4 = tkinter.BooleanVar()
+
+    option_section2.set(True)
+    option_section3.set(True)
+    option_section4.set(True)
 
     s2 = tkinter.Checkbutton(window, text='Sort and Arrange Files', variable=option_section2, onvalue=True,
                              offvalue=False)
 
     s3 = tkinter.Checkbutton(window, text='Run parallel woundcomputes', variable=option_section3, onvalue=True,
                              offvalue=False)
+    s4 = tkinter.Checkbutton(window, text='Run extract_data', variable=option_section3, onvalue=True,
+                             offvalue=False)
 
     s2.pack()
     s3.pack()
+    s4.pack()
 
     # Create button to accept variables inputed
     tkinter.Button(window, text="Proceed", command=accept).pack()
@@ -149,7 +166,7 @@ def input_gui() -> (str, bool, int, str):
     # Execute tkinter
     window.mainloop()
 
-    return image_type_clicked.get(), option_track_pillars.get(), parallel_processes_clicked.get(), microscope_type_clicked.get(), option_section2.get(), option_section3.get()
+    return image_type_clicked.get(), option_track_pillars.get(), parallel_processes_clicked.get(), microscope_type_clicked.get(), option_section2.get(), option_section3.get(), option_section4.get()
 
 
 #  Information Extraction Functions
@@ -198,7 +215,7 @@ def create_yaml(path: str, image_type_in: str, is_fl_in: bool, is_pillars_in: bo
                     yaml_input_file[key] = True
 
     # Write yaml output to path_output
-    with open(path + '/wc_dataset_' + image_type_in + '.yaml', 'w') as file:
+    with open(os.path.join(path, 'wc_dataset_' + image_type_in + '.yaml'), 'w') as file:
         yaml.safe_dump(yaml_input_file, file, sort_keys=False)
 
 
@@ -211,7 +228,9 @@ def define_basename_list(path_input_fn: str, path_output_fn: str, ms_choice: str
     if ms_choice == "Cytation":
         basename_list_fn = [name for name in os.listdir(path_input_fn) if
                             os.path.isdir(os.path.join(path_input_fn, name))]
-        basename_list_fn = [name for name in basename_list_fn if not path_input_fn + '/' + name == path_output_fn]
+        basename_list_fn = [name for name in basename_list_fn if
+                            not os.path.join(path_input_fn, name) == path_output_fn]
+        basename_list_fn = [name for name in basename_list_fn if not os.path.join(path_input_fn, name) == os.path.join(path_input_fn, 'Sorted')]
 
     else:
         for file in os.listdir(path_input_fn):
@@ -239,7 +258,7 @@ def extract_nd_info(basename_list_fn: list, path_output_fn: str, is_nd: bool, ms
     stage_pos_submap = {}
     if is_nd:
         for index_fn, basename_fn in enumerate(basename_list_fn):
-            with open(path_output_fn + '/' + basename_fn + '/' + basename_fn + '.nd', 'r') as nd_file:
+            with open(os.path.join(path_output_fn, basename_fn, basename_fn + '.nd'), 'r') as nd_file:
                 print("Opened .nd")
                 for l_no, line in enumerate(nd_file):
                     if '"NStagePositions"' in line:
@@ -247,7 +266,7 @@ def extract_nd_info(basename_list_fn: list, path_output_fn: str, is_nd: bool, ms
                         stage_positions.append(spos_int)
                         stage_pos_submap = {}
                         for l_no1, line1 in enumerate(nd_file):
-                            for N in range(1, spos_int):
+                            for N in range(1, spos_int+1):
                                 if '"Stage' + str(N) + '"' in line1:
                                     sp_well = line1.split('"')[-2]
                                     stage_pos_submap[N] = sp_well
@@ -256,11 +275,11 @@ def extract_nd_info(basename_list_fn: list, path_output_fn: str, is_nd: bool, ms
             print("Extracted information from .nd file")
     else:
         for index_fn, basename_fn in enumerate(basename_list_fn):
-            file_list = os.listdir(path_output_fn + '/' + basename_fn)
+            file_list = os.listdir(os.path.join(path_output_fn, basename_fn))
 
             timepoints = [file.split('_')[-1].split('.')[0] for file in file_list if
                           file.endswith('.tif') or file.endswith('.TIF')]
-            timepoints = (list(dict.fromkeys(timepoints)))
+            timepoints = list(dict.fromkeys(timepoints))
             timepoints_list.append(len(timepoints))
 
             if ms_choice == "Cytation":
@@ -291,27 +310,27 @@ def sort_basename_folders(basename_list_fn: list, path_input_fn: str, path_outpu
 
         # create folders for each expt
         try:
-            os.makedirs(path_output_fn + '/' + basename_fn)
+            os.makedirs(os.path.join(path_output_fn, basename_fn))
         except OSError as e:
             # If it fails, inform the user.
             print('Error: %s - %s.' % (e.filename, e.strerror))
 
         if ms_choice == "Cytation":
-            path_temp = path_input_fn + '/' + basename_fn
+            path_temp = os.path.join(path_input_fn, basename_fn)
 
             for file in os.listdir(path_temp):
                 if file.endswith('.tif' or '.TIF'):
                     try:
-                        shutil.copy(path_temp + '/' + file, path_output_fn + '/' + basename_fn + '/' + file)
+                        shutil.copy(os.path.join(path_temp, file), os.path.join(path_output_fn, basename_fn, file))
                     except OSError as e:
                         # If it fails, inform the user.
                         print('Error: %s - %s.' % (e.filename, e.strerror))
         else:
             # copy .nd file into respective basename folder
-            if os.path.isfile(path_input_fn + '/' + basename_fn + '.nd'):
+            if os.path.isfile(os.path.join(path_input_fn, basename_fn + '.nd')):
                 try:
-                    shutil.copy(path_input_fn + '/' + basename_fn + '.nd',
-                                path_output_fn + '/' + basename_fn + '/' + basename_fn + '.nd')
+                    shutil.copy(os.path.join(path_input_fn, basename_fn + '.nd'),
+                                os.path.join(path_output_fn, basename_fn, basename_fn + '.nd'))
                 except OSError as e:
                     # If it fails, inform the user.
                     print('Error: %s - %s.' % (e.filename, e.strerror))
@@ -320,93 +339,104 @@ def sort_basename_folders(basename_list_fn: list, path_input_fn: str, path_outpu
             for file in os.listdir(path_input_fn):
                 if file.startswith(basename_fn + '_') and not fnmatch.fnmatch(file, '*thumb*'):
                     try:
-                        shutil.copy(path_input_fn + '/' + file, path_output_fn + '/' + basename_fn + '/' + file)
+                        shutil.copy(os.path.join(path_input_fn, file), os.path.join(path_output_fn, basename_fn, file))
                     except OSError as e:
                         # If it fails, inform the user.
                         print('Error: %s - %s.' % (e.filename, e.strerror))
 
 
 def sort_stage_pos_folders(basename_list_fn: list, parent_output_fn: str,
-                           stage_pos_maps_fn: dict, image_type_fn: str, ms_choice: str):
+                           stage_pos_maps_fn: dict, image_type_fn: str, ms_choice: str, is_nd: bool):
     """Given basename list, parent output folder and number of stage positions list extracted from nd files. Sorts
     files into stage position folders"""
     # sort images into stage position folders
+    verbose = False
     for index_fn, basename_fn in enumerate(basename_list_fn):
-        filelist = os.listdir(parent_output_fn + '/' + basename_fn)
+        filelist = os.listdir(os.path.join(parent_output_fn, basename_fn))
         filelist.sort()
         for file in filelist:
-
-            for stage_pos_fn in range(1, len(stage_pos_maps_fn[basename_fn]) + 1):
-
-                # define input and output paths
-                path_input_fn = parent_output_fn + '/' + basename_fn
-                path_pos_output_fn = parent_output_fn + '/' + basename_fn + '/' + stage_pos_maps_fn[basename_fn][
-                    stage_pos_fn]
-
-                # path_pos_output_fn = parent_output_fn + '/' + basename_fn + '/' + 's' + f"{stage_pos_fn:02}"
-                # check if file belongs to current stage_pos group
-
+            if verbose:
+                print(file)
+            if file.casefold().endswith('.tif'):
+                if verbose:
+                    print('found tif')
                 if ms_choice == "Cytation":
                     spos = file.split('_')[0][:1] + file.split('_')[0][1:].zfill(2)
                 else:
                     spos = file.split('_')[-2][:1] + file.split('_')[-2][1:].zfill(2)
+                    if verbose:
+                        print("spos: ", spos)
+                if is_nd:
+                    spos = spos + '_' + stage_pos_maps_fn[basename_fn][int(spos.split('s')[-1])]
+                    if verbose:
+                        print('spos_nd:', spos)
 
-                if stage_pos_maps_fn[basename_fn][stage_pos_fn] == spos:
+                path_input_fn = os.path.join(parent_output_fn, basename_fn)
+                path_pos_output_fn = os.path.join(parent_output_fn, basename_fn, spos)
 
-                    # rename file for correct stage position sort syntax (_sXX_)
-
-                    # Isolate the frame number (timepoint)
-                    if ms_choice == "Cytation":
-                        file_timepoint = file.split('_')[-1].split('.', 1)[0]
-                        if file_timepoint.isdigit():
-                            file_newname = spos + '_t' + file_timepoint + '.TIF'
-                        else:
-                            file_newname = spos + '.TIF'
+                # Isolate the frame number (timepoint)
+                if ms_choice == "Cytation":
+                    file_timepoint = file.split('_')[-1].split('.')[0]
+                    if file_timepoint.isdigit():
+                        file_newname = spos + '_t' + file_timepoint + '.TIF'
                     else:
-                        try:
-                            file_timepoint = file.split('_[tT]', 1)[-1].split('.', 1)[0]
-                            # Rename file for correct time and stage position sort syntax (_sXX_ and _tXXX.)
-                        except ValueError:
-                            file_newname = spos + '.TIF'
-                        else:
-                            file_newname = spos + '_t' + file_timepoint.zfill(3) + '.TIF'
-
-                    # check if stage position directory already exists and move file into this folder if it does
-                    if os.path.exists(path_pos_output_fn + '/' + image_type_fn + '_images/'):
-                        try:
-                            shutil.move(path_input_fn + '/' + file,
-                                        path_pos_output_fn + '/' + image_type_fn + '_images/' + file_newname)
-                        except OSError as e:
-                            # If it fails, inform the user.
-                            print('Error: %s - %s.' % (e.filename, e.strerror))
-
-                    # otherwise, create folder and move file into this folder. Also copy parent yaml file into this
-                    # folder.
+                        file_newname = spos + '.TIF'
+                else:
+                    try:
+                        file_timepoint = file.casefold().split('_t')[-1].split('.')[0]
+                        # Rename file for correct time and stage position sort syntax (_sXX_ and _tXXX.)
+                    except ValueError:
+                        file_newname = spos + '.TIF'
                     else:
-                        try:
-                            os.makedirs(path_pos_output_fn + '/' + image_type_fn + '_images/')
-                            shutil.copy(parent_output_fn + '/wc_dataset_' + image_type_fn + '.yaml',
-                                        path_pos_output_fn + '/wc_dataset_' + image_type_fn + '.yaml')
-                            shutil.move(path_input_fn + '/' + file,
-                                        path_pos_output_fn + '/' + image_type_fn + '_images/' + file_newname)
+                        file_newname = spos + '_t' + file_timepoint.zfill(3) + '.TIF'
+                    if verbose:
+                        print("file_newname: ", file_newname)
+
+                # check if stage position directory already exists and move file into this folder if it does
+                if os.path.exists(os.path.join(path_pos_output_fn, image_type_fn + '_images')):
+                    try:
+                        shutil.move(os.path.join(path_input_fn, file),
+                                    os.path.join(path_pos_output_fn, image_type_fn + '_images', file_newname))
+                    except OSError as e:
+                        # If it fails, inform the user.
+                        print('Error: %s - %s.' % (e.filename, e.strerror))
+
+                # otherwise, create folder and move file into this folder. Also copy parent yaml file into this
+                # folder.
+                else:
+                    try:
+                        os.makedirs(os.path.join(path_pos_output_fn, image_type_fn + '_images'))
+                        shutil.copy(os.path.join(parent_output_fn, 'wc_dataset_' + image_type_fn + '.yaml'),
+                                    os.path.join(path_pos_output_fn, 'wc_dataset_' + image_type_fn + '.yaml'))
+                        if verbose:
+                            print("copying yaml")
+                        shutil.move(os.path.join(path_input_fn, file),
+                                    os.path.join(path_pos_output_fn, image_type_fn + '_images', file_newname))
+                        if verbose:
+                            print("moving file:", file)
 
 
-                        except OSError as e:
-                            # If it fails, inform the user.
-                            print('Error: %s - %s.' % (e.filename, e.strerror))
+                    except OSError as e:
+                        # If it fails, inform the user.
+                        print('Error: %s - %s.' % (e.filename, e.strerror))
 
 
-def sort_parallel_processes(basename_list_fn: list, parent_output_fn: str, parallels_in: int):
+
+
+
+def sort_parallel_processes(basename_list_fn: list, parent_output_fn: str, parallels_in: int, is_nd: bool):
     """Given basename list, parent output folder, number of stage positions list, number of parallel processes. Sorts 
     tissues into subfolders for parallel processing"""
     # Create processing folders
     for index_fn, basename_fn in enumerate(basename_list_fn):
-        path_input_fn = parent_output_fn + '/' + basename_fn
+        path_input_fn = os.path.join(parent_output_fn, basename_fn)
         file_list = os.listdir(path_input_fn)
         file_list.sort()
+        if is_nd:
+            file_list = [n1 for n1 in file_list if not n1.endswith('.nd')]
 
         for p_folder in range(1, parallels_in + 1):
-            loc_p_folder = path_input_fn + '/' + 'p' + f"{p_folder:02}"
+            loc_p_folder = os.path.join(path_input_fn, 'p' + f"{p_folder:02}")
             stage_pos_start = (p_folder - 1) * int(round((len(file_list) + 1) / parallels_in))
             stage_pos_end = p_folder * int(round((len(file_list) + 1) / parallels_in))
             if stage_pos_end > len(file_list):
@@ -415,8 +445,8 @@ def sort_parallel_processes(basename_list_fn: list, parent_output_fn: str, paral
                 os.makedirs(loc_p_folder)
                 for stage_pos_fn in range(stage_pos_start, stage_pos_end):
                     # define input and output paths
-                    move_loc_from = path_input_fn + '/' + file_list[stage_pos_fn]
-                    move_loc_to = loc_p_folder + '/' + file_list[stage_pos_fn]
+                    move_loc_from = os.path.join(path_input_fn, file_list[stage_pos_fn])
+                    move_loc_to = os.path.join(loc_p_folder, file_list[stage_pos_fn])
                     try:
                         shutil.move(move_loc_from, move_loc_to)
                     except OSError as e:
@@ -431,8 +461,8 @@ def sort_parallel_processes(basename_list_fn: list, parent_output_fn: str, paral
         if stage_pos_max < len(file_list):
             for stage_pos_fn in range(stage_pos_max, len(file_list)):
                 # define input and output paths
-                move_loc_from = path_input_fn + '/' + file_list[stage_pos_fn]
-                move_loc_to = loc_p_folder + '/' + file_list[stage_pos_fn]
+                move_loc_from = os.path.join(path_input_fn, file_list[stage_pos_fn])
+                move_loc_to = os.path.join(loc_p_folder, file_list[stage_pos_fn])
                 try:
                     shutil.move(move_loc_from, move_loc_to)
                 except OSError as e:
@@ -464,3 +494,25 @@ def woundcompute_run_Eclipse_Ti(input_path_fn: str):
             print("---------ERROR OF SOME DESCRIPTION HAS HAPPENED-------")
             print(ex)
             print("------------------------------------------------------")
+
+
+def sort_back_to_main(parent_input_fn: str, subfolder_input_fn: str):
+    filelist = os.listdir(subfolder_input_fn)
+    filelist.sort()
+    for file in filelist:
+        try:
+            shutil.move(os.path.join(subfolder_input_fn, file), os.path.join(parent_input_fn, file))
+        except OSError as e:
+            # If it fails, inform the user.
+            print('Error: %s - %s.' % (e.filename, e.strerror))
+
+    if not os.listdir(subfolder_input_fn):
+        try:
+            os.rmdir(subfolder_input_fn)
+        except OSError as e:
+            # If it fails, inform the user.
+            print('Error: %s - %s.' % (e.filename, e.strerror))
+
+
+# def extract_data(input_path_fn: str, basename_list_fn: list, stage_pos_maps_fn: dict, ms_choice: str, is_nd: str):
+#   for file in os.listdir(input_path_fn):
