@@ -1,6 +1,6 @@
 # Name: Main_multithreader
 #
-# Version: 1.7
+# Version: 1.8
 #
 # Author: Anish Vasan
 #
@@ -65,7 +65,8 @@ if section2:
     print("Completed")
 
 else:
-    basename_list, _ = define_basename_list(path_input, path_input, ms_choice)
+    basename_list = os.listdir(path_input)
+    basename_list = [name for name in basename_list if os.path.isdir(os.path.join(path_input, name))]
 
 # **Section 3: Execute woundcomputes in parallel** #
 if section3:
@@ -85,18 +86,27 @@ if section3:
         for thread_handle_j in processes:
             thread_handle_j.join()
 
+        for thread_count in range(1, parallels + 1):
+            input_location = os.path.join(path_output, basename, 'p' + f"{thread_count:02}")
+            sort_back_to_main(os.path.join(path_output, basename), input_location)
+
+        print("Files moved back to basename folder")
         print("All ", parallels, " threads have finished running for " + basename)
         print("Completed! Hurray!")
         print("End time:", time.ctime())
         print("Total time taken:", format_timespan(time.time() - start))
         print("Please run extract_dataset to consolidate outputs into an excel file!")
 
-        for thread_count in range(1, parallels + 1):
-            input_location = os.path.join(path_output, basename, 'p' + f"{thread_count:02}")
-            sort_back_to_main(os.path.join(path_output, basename), input_location)
-
-        print("Files moved back to basename folder")
-
 
 # **Section 4: Extract data from folders and create database and Excel output** #
-#if section4:
+if section4:
+
+    print(basename_list)
+    for index, basename in enumerate(basename_list):
+        extract_data(path_output, basename, image_type)
+        print("Data extracted to excel file in ", basename)
+
+
+
+
+

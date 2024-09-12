@@ -1,6 +1,6 @@
 # Name: wc_functions
 #
-# Version: 2.5
+# Version: 2.6
 #
 # Author: Anish Vasan
 #
@@ -22,6 +22,8 @@ from humanfriendly import format_timespan
 from woundcompute import image_analysis as ia
 from pathlib import Path
 import sys
+import pandas as pd
+import openpyxl
 
 
 # GUI Functions
@@ -52,7 +54,7 @@ def io_function(section2: bool) -> (str, str):
 
         os.makedirs(path_output)
     else:
-        path_output = []
+        path_output = path_input
     tk_root.destroy()
     return path_input, path_output
 
@@ -153,7 +155,7 @@ def input_gui() -> (str, bool, int, str, bool, bool, bool):
 
     s3 = tkinter.Checkbutton(window, text='Run parallel woundcomputes', variable=option_section3, onvalue=True,
                              offvalue=False)
-    s4 = tkinter.Checkbutton(window, text='Run extract_data', variable=option_section3, onvalue=True,
+    s4 = tkinter.Checkbutton(window, text='Run extract_data', variable=option_section4, onvalue=True,
                              offvalue=False)
 
     s2.pack()
@@ -421,9 +423,6 @@ def sort_stage_pos_folders(basename_list_fn: list, parent_output_fn: str,
                         print('Error: %s - %s.' % (e.filename, e.strerror))
 
 
-
-
-
 def sort_parallel_processes(basename_list_fn: list, parent_output_fn: str, parallels_in: int, is_nd: bool):
     """Given basename list, parent output folder, number of stage positions list, number of parallel processes. Sorts 
     tissues into subfolders for parallel processing"""
@@ -514,5 +513,40 @@ def sort_back_to_main(parent_input_fn: str, subfolder_input_fn: str):
             print('Error: %s - %s.' % (e.filename, e.strerror))
 
 
-# def extract_data(input_path_fn: str, basename_list_fn: list, stage_pos_maps_fn: dict, ms_choice: str, is_nd: str):
-#   for file in os.listdir(input_path_fn):
+def extract_data(path_output_fn: str, basename_fn: str, image_type: str):
+    input_path_fn = os.path.join(path_output_fn, basename_fn)
+    folder_list = os.listdir(input_path_fn)
+    folder_list.sort()
+    folder_list = [n1 for n1 in folder_list if not n1.endswith('.nd')]
+
+    frames = len(os.listdir(os.path.join(input_path_fn, folder_list[0], image_type + "_images")))
+    tlist = [T * 0.5 for T in range(1, frames + 1)]
+    df_woundarea = pd.DataFrame({'Frame': range(1, frames + 1), 'Time': tlist})
+    df_isclosed = pd.DataFrame({'Frame': range(1, frames + 1), 'Time': tlist})
+    df_isbroken = pd.DataFrame({'Frame': range(1, frames + 1), 'Time': tlist})
+
+    for file in folder_list:
+        if os.path.isfile(os.path.join(input_path_fn, file, 'segment_' + image_type, 'wound_area_vs_frame.txt')):
+            df_woundarea[file] = pd.read_table(os.path.join(input_path_fn, file, 'segment_' + image_type, 'wound_area_vs_frame.txt'), header=None)
+            df_isclosed[file] = pd.read_table(os.path.join(input_path_fn, file, 'segment_' + image_type, 'is_closed_vs_frame.txt'), header=None)
+            df_isbroken[file] = pd.read_table(os.path.join(input_path_fn, file, 'segment_' + image_type, 'is_broken_vs_frame.txt'), header=None)
+
+        else:
+            df_woundarea[file] = [0]*frames
+            df_isclosed[file] = [0]*frames
+            df_isbroken[file] = [0]*frames
+
+    workbook = openpyxl.Workbook()
+    workbook.save(os.path.join(path_output_fn, 'code_output_' + basename_fn + '.xlsx'))
+
+    append_to_excel(os.path.join(path_output_fn, 'code_output_' + basename_fn + '.xlsx'), df_woundarea, "wound_area")
+    append_to_excel(os.path.join(path_output_fn, 'code_output_' + basename_fn + '.xlsx'), df_isclosed, "is_closed")
+    append_to_excel(os.path.join(path_output_fn, 'code_output_' + basename_fn + '.xlsx'), df_isbroken, "is_broken")
+
+
+def append_to_excel(fpath, df, sheet_name):
+    with pd.ExcelWriter(fpath, mode="a", if_sheet_exists='replace') as f:
+        df.to_excel(f, sheet_name=sheet_name)
+
+
+
