@@ -520,7 +520,7 @@ def extract_data(path_output_fn: str, basename_fn: str, image_type: str):
     folder_list = [n1 for n1 in folder_list if not n1.endswith('.nd')]
 
     frames = len(os.listdir(os.path.join(input_path_fn, folder_list[0], image_type + "_images")))
-    tlist = [T * 0.5 for T in range(1, frames + 1)]
+    tlist = [T * 0.5 for T in range(0, frames)]
     df_woundarea = pd.DataFrame({'Frame': range(1, frames + 1), 'Time': tlist})
     df_isclosed = pd.DataFrame({'Frame': range(1, frames + 1), 'Time': tlist})
     df_isbroken = pd.DataFrame({'Frame': range(1, frames + 1), 'Time': tlist})

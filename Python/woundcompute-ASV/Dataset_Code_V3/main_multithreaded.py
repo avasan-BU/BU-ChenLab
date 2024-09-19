@@ -41,7 +41,7 @@ if section2:
     # Create list of .nd files/experiments in the input folder
     basename_list, is_nd = define_basename_list(path_input, path_output, ms_choice)
     print("Created basename list:", basename_list)
-    print(is_nd)
+    print('.nd file found:', is_nd)
 
     # Sort images in input folder into Sorted/basename/ folders
     print("Sorting images into corresponding basename folders...")
@@ -51,9 +51,7 @@ if section2:
     # Extract stage position information from .nd file or from data in folder
     stage_pos_nd, stage_pos_maps, timepoints_list = extract_nd_info(basename_list, path_output, is_nd, ms_choice)
     print("Extracted stage position information")
-    print(stage_pos_nd)
-    print(stage_pos_maps)
-    print(timepoints_list)
+
     #  Sort images in each basename folder into their corresponding stage position folders
     print("Sorting images in each basename folder into their corresponding stage position folders...")
     sort_stage_pos_folders(basename_list, path_output, stage_pos_maps, image_type, ms_choice, is_nd)
