@@ -1,6 +1,6 @@
 # Name: wc_functions
 #
-# Version: 2.6
+# Version: 2.8
 #
 # Author: Anish Vasan
 #
@@ -15,6 +15,7 @@ import shutil
 import tkinter
 import yaml
 import subprocess
+import tkinter as tk
 from tkinter.filedialog import askdirectory
 from tkinter import simpledialog
 import time
@@ -24,152 +25,10 @@ from pathlib import Path
 import sys
 import pandas as pd
 import openpyxl
-
-
-# GUI Functions
-def io_function(section2: bool) -> (str, str):
-    """Prompt user for input folder that contains a .nd file"""
-    # prompt user for the file directory. Will open as a popup window named "tk"
-    tk_root = tkinter.Tk()
-    print("Please open the directory that contains your .nd file")
-    path_input = askdirectory(title='Select Input Folder with .nd file')  # shows dialog box and return the path
-    if path_input == "":
-        print("No folder selected. Program exiting.")
-        quit()
-    else:
-        print("Inputed path:", path_input)
-
-    if section2:
-        path_output = os.path.join(path_input, 'Sorted')
-
-        if os.path.exists(path_output):
-            path_out_new = simpledialog.askstring('Output folder', 'Enter new output folder name')
-            # path_out_new = input('Enter new output folder name')
-            if path_out_new == "":
-                print("No folder selected. Program exiting.")
-                quit()
-            path_output = os.path.join(path_input, path_out_new)
-
-        # create a new  output directory
-
-        os.makedirs(path_output)
-    else:
-        path_output = path_input
-    tk_root.destroy()
-    return path_input, path_output
-
-
-def input_gui() -> (str, bool, int, str, bool, bool, bool):
-    # Create object
-    window = tkinter.Tk()
-
-    # Adjust size
-    # window.geometry("400x400")
-
-    # Close window after storing variables
-    def accept():
-        window.destroy()
-
-    def killmenow():
-        sys.exit()
-
-    # Menu for Microscope Type
-
-    # Dropdown menu options
-
-    options_microscope_type = [
-        "Eclipse Ti",
-        "Eclipse Ti 2 - Spectra",
-        "Cytation"
-    ]
-
-    # datatype of menu text
-    microscope_type_clicked = tkinter.StringVar()
-
-    # Create Label
-    label_microscope_type = tkinter.Label(window, text="Source Microscope:")
-    label_microscope_type.pack()
-
-    # initial menu text
-    microscope_type_clicked.set("Eclipse Ti")
-
-    # Create Dropdown menu
-    drop1 = tkinter.OptionMenu(window, microscope_type_clicked, *options_microscope_type)
-    drop1.pack()
-
-    # Menu for Image Type
-
-    # Dropdown menu options
-    options_image_type = [
-        "ph1",
-        "BF",
-    ]
-
-    # datatype of menu text
-    image_type_clicked = tkinter.StringVar()
-
-    # Create Label
-    label_image_type = tkinter.Label(window, text="Image Type:")
-    label_image_type.pack()
-
-    # initial menu text
-    image_type_clicked.set("ph1")
-
-    # Create Dropdown menu
-    drop1 = tkinter.OptionMenu(window, image_type_clicked, *options_image_type)
-    drop1.pack()
-
-    # Menu for number of Parallel Processes
-
-    # datatype of menu text
-
-    parallel_processes_clicked = tkinter.IntVar(value=8)
-
-    # Create Label
-    label_parallel_processes = tkinter.Label(window, text="Number of Parallel Processes:")
-    label_parallel_processes.pack()
-
-    # Create Dropdown menu
-    scale = tkinter.Scale(window, from_=1, to=12, orient="horizontal", variable=parallel_processes_clicked)
-    scale.pack(side="top", fill="x")
-
-    # Menu for Pillar Tracking
-    # Create checkbox
-    option_track_pillars = tkinter.BooleanVar()
-    option_track_pillars.set(True)
-    c1 = tkinter.Checkbutton(window, text='Track Pillars', variable=option_track_pillars, onvalue=True, offvalue=False)
-    c1.pack()
-
-    # Menu for Code Sections to run
-    # Create checkbox
-    option_section2 = tkinter.BooleanVar()
-    option_section3 = tkinter.BooleanVar()
-    option_section4 = tkinter.BooleanVar()
-
-    option_section2.set(True)
-    option_section3.set(True)
-    option_section4.set(True)
-
-    s2 = tkinter.Checkbutton(window, text='Sort and Arrange Files', variable=option_section2, onvalue=True,
-                             offvalue=False)
-
-    s3 = tkinter.Checkbutton(window, text='Run parallel woundcomputes', variable=option_section3, onvalue=True,
-                             offvalue=False)
-    s4 = tkinter.Checkbutton(window, text='Run extract_data', variable=option_section4, onvalue=True,
-                             offvalue=False)
-
-    s2.pack()
-    s3.pack()
-    s4.pack()
-
-    # Create button to accept variables inputed
-    tkinter.Button(window, text="Proceed", command=accept).pack()
-    tkinter.Button(window, text="Quit", command=killmenow).pack()
-    # Execute tkinter
-    window.mainloop()
-
-    return image_type_clicked.get(), option_track_pillars.get(), parallel_processes_clicked.get(), microscope_type_clicked.get(), option_section2.get(), option_section3.get(), option_section4.get()
-
+import re
+import psutil
+import time
+from concurrent.futures import ProcessPoolExecutor, as_completed, wait, FIRST_COMPLETED
 
 #  Information Extraction Functions
 def create_yaml(path: str, image_type_in: str, is_fl_in: bool, is_pillars_in: bool):
@@ -362,43 +221,47 @@ def sort_stage_pos_folders(basename_list_fn: list, parent_output_fn: str,
             if file.casefold().endswith('.tif'):
                 if verbose:
                     print('found tif')
-                if ms_choice == "Cytation":
-                    spos = file.split('_')[0][:1] + file.split('_')[0][1:].zfill(2)
-                else:
-                    spos = file.split('_')[-2][:1] + file.split('_')[-2][1:].zfill(2)
-                    if verbose:
-                        print("spos: ", spos)
-                if is_nd:
-                    spos = spos + '_' + stage_pos_maps_fn[basename_fn][int(spos.split('s')[-1])]
-                    if verbose:
-                        print('spos_nd:', spos)
+
+                #Define pattern to recognize timepoint and stage position
+                timepoint_pattern = r't(\d+)'
+                stage_pattern_s = r's(\d+)'
+                stage_pattern_letter = r'([A-H])(\d+)'
+                new_filename = file
+                # Find timepoint and stage position
+                timepoint_match = re.search(timepoint_pattern, file)
+                stage_wellpos_match = re.search(stage_pattern_letter, file)
+                stage_match_s = re.search(stage_pattern_s, file)
+
+                # Rename timepoint and stage position to have 3 digits
+                if timepoint_match:
+                    old_timepoint = timepoint_match.group(0)
+                    timepoint_num = int(timepoint_match.group(1))
+                    new_timepoint = f't{timepoint_num:03d}'
+                    new_filename = new_filename.replace(old_timepoint, new_timepoint)
+
+                # Identify the stage position
+                if stage_wellpos_match:
+                    spos = stage_wellpos_match.group(0)
+                # If the stage position is formatted as 'sX or sXX' where X is a digit then rename to 'sXXX'
+                elif stage_match_s:
+                    old_stage = stage_match_s.group(0)
+                    stage_num = int(stage_match_s.group(1))
+                    spos = f's{stage_num:03d}'
+                    if is_nd:
+                        spos = spos + '_' + stage_pos_maps_fn[basename_fn][int(spos.split('s')[-1])]
+                    new_filename = new_filename.replace(old_stage, spos)
+
+
+
 
                 path_input_fn = os.path.join(parent_output_fn, basename_fn)
                 path_pos_output_fn = os.path.join(parent_output_fn, basename_fn, spos)
-
-                # Isolate the frame number (timepoint)
-                if ms_choice == "Cytation":
-                    file_timepoint = file.split('_')[-1].split('.')[0]
-                    if file_timepoint.isdigit():
-                        file_newname = spos + '_t' + file_timepoint + '.TIF'
-                    else:
-                        file_newname = spos + '.TIF'
-                else:
-                    try:
-                        file_timepoint = file.casefold().split('_t')[-1].split('.')[0]
-                        # Rename file for correct time and stage position sort syntax (_sXX_ and _tXXX.)
-                    except ValueError:
-                        file_newname = spos + '.TIF'
-                    else:
-                        file_newname = spos + '_t' + file_timepoint.zfill(3) + '.TIF'
-                    if verbose:
-                        print("file_newname: ", file_newname)
 
                 # check if stage position directory already exists and move file into this folder if it does
                 if os.path.exists(os.path.join(path_pos_output_fn, image_type_fn + '_images')):
                     try:
                         shutil.move(os.path.join(path_input_fn, file),
-                                    os.path.join(path_pos_output_fn, image_type_fn + '_images', file_newname))
+                                    os.path.join(path_pos_output_fn, image_type_fn + '_images', new_filename))
                     except OSError as e:
                         # If it fails, inform the user.
                         print('Error: %s - %s.' % (e.filename, e.strerror))
@@ -413,7 +276,7 @@ def sort_stage_pos_folders(basename_list_fn: list, parent_output_fn: str,
                         if verbose:
                             print("copying yaml")
                         shutil.move(os.path.join(path_input_fn, file),
-                                    os.path.join(path_pos_output_fn, image_type_fn + '_images', file_newname))
+                                    os.path.join(path_pos_output_fn, image_type_fn + '_images', new_filename))
                         if verbose:
                             print("moving file:", file)
 
@@ -423,76 +286,25 @@ def sort_stage_pos_folders(basename_list_fn: list, parent_output_fn: str,
                         print('Error: %s - %s.' % (e.filename, e.strerror))
 
 
-def sort_parallel_processes(basename_list_fn: list, parent_output_fn: str, parallels_in: int, is_nd: bool):
-    """Given basename list, parent output folder, number of stage positions list, number of parallel processes. Sorts 
-    tissues into subfolders for parallel processing"""
-    # Create processing folders
-    for index_fn, basename_fn in enumerate(basename_list_fn):
-        path_input_fn = os.path.join(parent_output_fn, basename_fn)
-        file_list = os.listdir(path_input_fn)
-        file_list.sort()
-        if is_nd:
-            file_list = [n1 for n1 in file_list if not n1.endswith('.nd')]
-
-        for p_folder in range(1, parallels_in + 1):
-            loc_p_folder = os.path.join(path_input_fn, 'p' + f"{p_folder:02}")
-            stage_pos_start = (p_folder - 1) * int(round((len(file_list) + 1) / parallels_in))
-            stage_pos_end = p_folder * int(round((len(file_list) + 1) / parallels_in))
-            if stage_pos_end > len(file_list):
-                stage_pos_end = len(file_list)
-            try:
-                os.makedirs(loc_p_folder)
-                for stage_pos_fn in range(stage_pos_start, stage_pos_end):
-                    # define input and output paths
-                    move_loc_from = os.path.join(path_input_fn, file_list[stage_pos_fn])
-                    move_loc_to = os.path.join(loc_p_folder, file_list[stage_pos_fn])
-                    try:
-                        shutil.move(move_loc_from, move_loc_to)
-                    except OSError as e:
-                        # If it fails, inform the user.
-                        print('Error: %s - %s.' % (e.filename, e.strerror))
-            except OSError as e:
-                # If it fails, inform the user.
-                print('Error: %s - %s.' % (e.filename, e.strerror))
-
-        stage_pos_max = parallels_in * int(round((len(file_list) + 1) / parallels_in))
-
-        if stage_pos_max < len(file_list):
-            for stage_pos_fn in range(stage_pos_max, len(file_list)):
-                # define input and output paths
-                move_loc_from = os.path.join(path_input_fn, file_list[stage_pos_fn])
-                move_loc_to = os.path.join(loc_p_folder, file_list[stage_pos_fn])
-                try:
-                    shutil.move(move_loc_from, move_loc_to)
-                except OSError as e:
-                    # If it fails, inform the user.
-                    print('Error: %s - %s.' % (e.filename, e.strerror))
-
-
 # WoundCompute Functions
-def run_threads(script_name_fn, path_input_fn):
-    subprocess.run(["python", script_name_fn, path_input_fn])
 
 
-def woundcompute_run_Eclipse_Ti(input_path_fn: str):
+def woundcompute_run(input_path_fn: str):
     # ** Section 3: Execute woundcompute for all basename folders in the Sorted folder ** #
-
     time_all = []
-    for subfolder in os.listdir(input_path_fn):
-        position = Path(input_path_fn).joinpath(subfolder)
-        current = time.time()
-        try:
-            time_all, action_all = ia.run_all(position)
-            secondsPassed = time.time() - current
-            print("Thread: ", os.path.basename(os.path.normpath(input_path_fn)), "tissue: ", subfolder, "time: ",
-                  format_timespan(secondsPassed))
-        except Exception as ex:
-            time_all.append(time.time())
-            print("Thread: ", os.path.basename(os.path.normpath(input_path_fn)), " tissue: ", subfolder, " time: ",
+    current = time.time()
+    try:
+        time_all, action_all = ia.run_all(Path(input_path_fn))
+        secondsPassed = time.time() - current
+        print("Processing: ", input_path_fn, "  Tissue: ", os.path.basename(os.path.normpath(input_path_fn)), "     time: ",
+                format_timespan(secondsPassed))
+    except Exception as ex:
+        time_all.append(time.time())
+        print("Path: ", input_path_fn, "    Tissue: ", os.path.basename(os.path.normpath(input_path_fn)), "     time: ",
                   time.ctime())
-            print("---------ERROR OF SOME DESCRIPTION HAS HAPPENED-------")
-            print(ex)
-            print("------------------------------------------------------")
+        print("---------ERROR OF SOME DESCRIPTION HAS HAPPENED-------")
+        print(ex)
+        print("------------------------------------------------------")
 
 
 def sort_back_to_main(parent_input_fn: str, subfolder_input_fn: str):
@@ -548,5 +360,37 @@ def append_to_excel(fpath, df, sheet_name):
     with pd.ExcelWriter(fpath, mode="a", if_sheet_exists='replace') as f:
         df.to_excel(f, sheet_name=sheet_name)
 
+
+# Parallel Processing handlers
+
+def get_cpu_usage():
+    return psutil.cpu_percent(interval=1)
+
+
+def process_folder(main_folder, cpu_threshold):
+    # Get all subfolders in the main folder
+    subfolders = [f.path for f in os.scandir(main_folder) if f.is_dir()]
+
+    with ProcessPoolExecutor() as executor:
+        futures = []
+        for subfolder in subfolders:
+            while True:
+                cpu_usage = get_cpu_usage()
+                if cpu_usage < cpu_threshold:
+                    future = executor.submit(woundcompute_run, subfolder)
+                    futures.append(future)
+                    break
+                else:
+                    # Wait for a future to complete before adding more
+                    if futures:
+                        done, _ = executor.wait(futures, return_when='FIRST_COMPLETED')
+                        for completed_future in done:
+                            futures.remove(completed_future)
+                    else:
+                        time.sleep(0.1)  # Short sleep to prevent busy waiting
+
+        # Wait for all remaining futures to complete
+        for future in as_completed(futures):
+            pass
 
 

@@ -12,7 +12,9 @@
 
 import threading
 from wc_functions import *
+from GUI_functions import *
 import sys
+# import Wellplate_GUI as WPG
 
 # DEFINITIONS #
 # These require user input/changes based on experiments - now entered through GUI #

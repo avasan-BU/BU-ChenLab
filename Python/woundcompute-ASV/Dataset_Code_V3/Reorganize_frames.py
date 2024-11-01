@@ -2,10 +2,10 @@ import os
 import matplotlib.pyplot as plt
 
 # Config:
-tissue_dir = 'C:\\Working Folder\\20240913_R7P2_Viability2\\Sorted\\tissue_ai1'
-result_grid_filename = 'C:\\Working Folder\\20240913_R7P2_Viability2\\Sorted\\viz'
+tissue_dir = 'C:\\Working Folder\\20240927_R7P6_Drug2\\Sorted\\tissue_ai'
+result_grid_filename = 'C:\\Working Folder\\20240927_R7P6_Drug2\\Sorted\\viz'
 grid_size_x = 12
-grid_size_y = 5
+grid_size_y = 9
 result_figsize_resolution_x = grid_size_x*640/100 # 1 = 100px
 result_figsize_resolution_y = grid_size_y*480/100
 tissue_list = os.listdir(tissue_dir)
