@@ -12,7 +12,7 @@
 
 import threading
 from wc_functions import *
-from GUI_functions import *
+from wc_GUI_functions import *
 import sys
 # import Wellplate_GUI as WPG
 
