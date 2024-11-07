@@ -53,7 +53,7 @@ def write_to_sp_yaml(path_input_fn: str, input_list_fn, name_fn: str):
     with open(os.path.join(path_input_fn,name_fn + '.yaml'), 'w') as file:
         yaml.safe_dump(input_list_fn, file, sort_keys=False)
 
-def create_wc_yaml(path_in: str, image_type_in: str, is_fl_in: bool, is_pillars_in: bool):
+def create_wc_yaml(path_in: str, image_type_in: str, is_pillars_in: bool):
     """Given the output path as string. Will create a yaml file in the main output folder. This yaml file will be
     copied into each subfolder during the sorting function"""
 
@@ -89,13 +89,9 @@ def create_wc_yaml(path_in: str, image_type_in: str, is_fl_in: bool, is_pillars_
         if image_type_in in key and not "version" in key and not "fl" in key and not "track" in key:
             yaml_input_file[key] = True
 
-            if is_fl_in:
-                if "fl" in key and not "version" in key:
-                    yaml_input_file[key] = True
-
-            if is_pillars_in:
-                if "pillars" in key and not "version" in key:
-                    yaml_input_file[key] = True
+        if is_pillars_in:
+            if "track_pillars_ph1" in key:
+                yaml_input_file[key] = True
 
     # Write yaml output to path_output
     with open(os.path.join(path_in, 'wc_dataset_' + image_type_in + '.yaml'), 'w') as file:

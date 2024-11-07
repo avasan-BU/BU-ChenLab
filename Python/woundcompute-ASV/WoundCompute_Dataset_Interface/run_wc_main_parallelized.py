@@ -20,7 +20,6 @@ from wc_data_functions import *
 if __name__ == "__main__":
 
     image_type, is_pillars, cpu_threshold, ms_choice, imaging_interval, section2, section3, section4, section5 = input_gui()
-    is_fl = False  # Options: True, False
 
     # RUN CODE #
 
@@ -30,7 +29,6 @@ if __name__ == "__main__":
     print("Current config:")
     print("CPU Utilization Threshold:", cpu_threshold, "%")
     print("Image Type:", image_type)
-    print("Fluorescent Images:", is_fl)
     print("Track Pillars:", is_pillars)
     print("Data Type:", ms_choice)
     path_input, path_output = io_function(section2)
@@ -38,7 +36,7 @@ if __name__ == "__main__":
     # **Section 2: Execute functions to prepare folder structure for WoundCompute** #
     if section2:
         # Create yaml file for image type
-        create_wc_yaml(path_output, image_type, is_fl, is_pillars)
+        create_wc_yaml(path_output, image_type, is_pillars)
         print("Created .yaml file")
 
         # Create list of .nd files/experiments in the input folder
