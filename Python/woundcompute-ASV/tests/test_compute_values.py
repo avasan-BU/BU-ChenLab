@@ -3,6 +3,7 @@ import math
 import numpy as np
 from pathlib import Path
 import pytest
+from scipy.spatial import distance
 from skimage import io
 from skimage import morphology
 from woundcompute import image_analysis as ia
@@ -74,6 +75,31 @@ def test_compute_unit_vector():
     assert np.allclose(vec, np.asarray([1, 0]))
 
 
+def test_compute_distance_multi_point():
+    coords_1 = np.random.random((10, 2))
+    coords_2 = np.random.random((5, 2))
+    pt1_0_orig, pt1_1_orig, pt2_0_orig, pt2_1_orig = com.compute_distance_multi_point(coords_1, coords_2)
+    arr = distance.cdist(coords_1, coords_2, 'euclidean')
+    min_known = np.min(arr)
+    x1 = pt1_0_orig
+    x2 = pt2_0_orig
+    y1 = pt1_1_orig
+    y2 = pt2_1_orig
+    min_found = ((x1 - x2) ** 2.0 + (y1 - y2) ** 2.0) ** 0.5
+    assert np.isclose(min_known, min_found)
+    coords_1 = np.ones((2895, 2))
+    coords_2 = np.zeros((5567, 2))
+    pt1_0_orig, pt1_1_orig, pt2_0_orig, pt2_1_orig = com.compute_distance_multi_point(coords_1, coords_2)
+    arr = distance.cdist(coords_1, coords_2, 'euclidean')
+    min_known = np.min(arr)
+    x1 = pt1_0_orig
+    x2 = pt2_0_orig
+    y1 = pt1_1_orig
+    y2 = pt2_1_orig
+    min_found = ((x1 - x2) ** 2.0 + (y1 - y2) ** 2.0) ** 0.5
+    assert np.isclose(min_known, min_found)
+
+
 def test_box_to_unit_vec():
     box = np.asarray([[0, 0], [0, 10], [5, 10], [5, 0]])
     vec = com.box_to_unit_vec(box)
@@ -97,6 +123,48 @@ def test_insert_borders():
     assert np.sum(mask) == 30 * 30
 
 
+def test_ix_loop():
+    val = 5
+    num_pts_contour = 10
+    val_new = com.ix_loop(val, num_pts_contour)
+    assert val == val_new
+    val = 11
+    val_new = com.ix_loop(val, num_pts_contour)
+    assert val_new == 1
+    val = -3
+    val_new = com.ix_loop(val, num_pts_contour)
+    assert val_new == 7
+
+
+def test_get_local_curvature():
+    rad = 50
+    disk = morphology.disk(rad, bool)
+    array = np.zeros((rad * 4, rad * 4))
+    array[rad:rad + disk.shape[0], rad:rad + disk.shape[1]] = disk
+    contour = seg.mask_to_contour(array)
+    sample_dist = np.min([100, contour.shape[0] * 0.1])
+    c_idx = 0
+    kappa_1 = com.get_local_curvature(contour, array, c_idx, sample_dist)
+    assert pytest.approx(kappa_1, 0.05) == 1.0 / rad
+    rad = 100
+    disk = morphology.disk(rad, bool)
+    array = np.zeros((rad * 4, rad * 4))
+    array[rad:rad + disk.shape[0], rad:rad + disk.shape[1]] = disk
+    contour = seg.mask_to_contour(array)
+    sample_dist = np.min([100, contour.shape[0] * 0.1])
+    c_idx = 0
+    kappa_2 = com.get_local_curvature(contour, array, c_idx, sample_dist)
+    assert pytest.approx(kappa_2, 0.05) == 1.0 / rad
+    assert kappa_1 > kappa_2
+    array = np.zeros((30, 1000))
+    array[10:20, 100:900] = 1
+    contour = seg.mask_to_contour(array)
+    sample_dist = np.min([100, contour.shape[0] * 0.1])
+    c_idx = 500
+    kappa_1 = com.get_local_curvature(contour, array, c_idx, sample_dist)
+    assert math.isinf(kappa_1)
+
+
 def test_mask_to_box():
     mask = np.zeros((100, 100))
     mask[25:75, 45:55] = 1
@@ -114,7 +182,6 @@ def test_mask_to_box():
     assert np.isclose(np.max(box[:, 0]), 74, atol=5)
     assert np.isclose(np.min(box[:, 1]), 45, atol=5)
     assert np.isclose(np.max(box[:, 1]), 54, atol=5)
-
 
 
 def test_axis_from_mask_artifical():
@@ -248,14 +315,6 @@ def test_invert_rot_mat():
     assert np.allclose(mult, np.eye(2))
 
 
-def test_compute_dist_line_pt():
-    pt0 = 0
-    pt1 = 0
-    line = np.random.random((100, 2))
-    dists = com.compute_dist_line_pt(pt0, pt1, line)
-    assert np.allclose(dists, (line[:, 0] ** 2.0 + line[:, 1] ** 2.0) ** 0.5)
-
-
 def test_get_tissue_width():
     tissue_mask_robust = np.zeros((100, 100))
     tissue_mask_robust[40:61, 30:81] = 1
@@ -276,54 +335,31 @@ def test_get_tissue_width():
     assert np.isclose(pt2_0_orig, 60, 1.0)
 
 
-def test_get_tissue_width_rotated():
-    tissue_mask_robust = np.zeros((100, 100))
-    tissue_mask_robust[40:61, 30:81] = 1
-    tissue_mask_robust = com.rot_image(tissue_mask_robust, 50, 50, np.pi / 4.0)
-    tissue_width, pt1_0, pt1_1, pt2_0, pt2_1 = com.get_tissue_width(tissue_mask_robust)
-    assert np.isclose(tissue_width, 20.0, 3.0)
-    dist = ((pt1_0 - pt2_0) ** 2.0 + (pt1_1 - pt2_1) ** 2.0) ** 0.5
-    assert np.isclose(dist, 20, 3)
-
-
-def test_get_local_curvature():
-    rad = 50
-    disk = morphology.disk(rad, bool)
-    array = np.zeros((rad * 4, rad * 4))
-    array[rad:rad + disk.shape[0], rad:rad + disk.shape[1]] = disk
-    contour = seg.mask_to_contour(array)
-    sample_dist = np.min([100, contour.shape[0] * 0.1])
-    c_idx = 0
-    kappa_1 = com.get_local_curvature(contour, array, c_idx, sample_dist)
-    assert pytest.approx(kappa_1, 0.05) == 1.0 / rad
-    rad = 100
-    disk = morphology.disk(rad, bool)
-    array = np.zeros((rad * 4, rad * 4))
-    array[rad:rad + disk.shape[0], rad:rad + disk.shape[1]] = disk
-    contour = seg.mask_to_contour(array)
-    sample_dist = np.min([100, contour.shape[0] * 0.1])
-    c_idx = 0
-    kappa_2 = com.get_local_curvature(contour, array, c_idx, sample_dist)
-    assert pytest.approx(kappa_2, 0.05) == 1.0 / rad
-    assert kappa_1 > kappa_2
-    array = np.zeros((30, 1000))
-    array[10:20, 100:900] = 1
-    contour = seg.mask_to_contour(array)
-    sample_dist = np.min([100, contour.shape[0] * 0.1])
-    c_idx = 500
-    kappa_1 = com.get_local_curvature(contour, array, c_idx, sample_dist)
-    assert math.isinf(kappa_1)
-
-
-def test_get_tissue_width_real():
-    file_path = glob_ph1("test_ph1_movie_mini_Anish")[0]
-    example_file = io.imread(file_path)
-    thresh_img = seg.threshold_array(example_file, 4)
-    tissue_mask, wound_mask, _ = seg.isolate_masks(thresh_img, 1)
-    tissue_mask_robust = seg.make_tissue_mask_robust(tissue_mask, wound_mask)
-    tissue_width, pt1_0_orig, pt1_1_orig, pt2_0_orig, pt2_1_orig = com.get_tissue_width(tissue_mask_robust)
+def test_get_tissue_width_zoom():
+    tissue_mask = np.zeros((500, 500))
+    tissue_mask[50:450, 0:500] = 1
+    wound_mask = np.zeros((500, 500))
+    tissue_width, pt1_0_orig, pt1_1_orig, pt2_0_orig, pt2_1_orig = com.get_tissue_width_zoom(tissue_mask, wound_mask)
+    assert np.isclose(tissue_width, 400, 20)
     dist = ((pt1_0_orig - pt2_0_orig) ** 2.0 + (pt1_1_orig - pt2_1_orig) ** 2.0) ** 0.5
-    assert np.isclose(dist, tissue_width)
+    assert np.isclose(tissue_width, dist, 5)
+    # example where tissue regions are less than 2
+    tissue_mask = np.zeros((500, 500))
+    wound_mask = np.zeros((500, 500))
+    tissue_width, pt1_0_orig, pt1_1_orig, pt2_0_orig, pt2_1_orig = com.get_tissue_width_zoom(tissue_mask, wound_mask)
+    assert np.isclose(tissue_width, 0.0)
+    assert np.isclose(pt1_0_orig, 0.0)
+    assert np.isclose(pt1_1_orig, 0.0)
+    assert np.isclose(pt2_0_orig, 0.0)
+    assert np.isclose(pt2_1_orig, 0.0)
+
+
+def test_compute_dist_line_pt():
+    pt0 = 0
+    pt1 = 0
+    line = np.random.random((100, 2))
+    dists = com.compute_dist_line_pt(pt0, pt1, line)
+    assert np.allclose(dists, (line[:, 0] ** 2.0 + line[:, 1] ** 2.0) ** 0.5)
 
 
 def test_tissue_parameters():
@@ -341,12 +377,12 @@ def test_tissue_parameters():
     region = seg.get_largest_regions(regions_all, 1)[0]
     _, axis_major_length, axis_minor_length, centroid_row, centroid_col, _, _, orientation = seg.extract_region_props(region)
     # contour_clipped = com.clip_contour(tissue_contour, centroid_row, centroid_col, orientation, axis_major_length, axis_minor_length)
-    import matplotlib.pyplot as plt
-    plt.imshow(img_list[0])
-    plt.plot(tissue_contour[:, 1], tissue_contour[:, 0], 'r-o')
+    # import matplotlib.pyplot as plt
+    # plt.imshow(img_list[0])
+    # plt.plot(tissue_contour[:, 1], tissue_contour[:, 0], 'r-o')
     # plt.plot(contour_clipped[:, 1], contour_clipped[:, 0], 'c-.')
-    plt.plot(pt1_1, pt1_0, 'bo')
-    plt.plot(pt2_1, pt2_0, 'go')
+    # plt.plot(pt1_1, pt1_0, 'bo')
+    # plt.plot(pt2_1, pt2_0, 'go')
     assert width > 0
     assert area > 0
     assert kappa_1 < 1
@@ -356,11 +392,23 @@ def test_tissue_parameters():
     assert pt1_1 > 0 and pt1_1 < img_list[0].shape[0]
     assert pt2_1 > 0 and pt2_1 < img_list[0].shape[0]
     assert tissue_contour.shape[0] > 0
-    import matplotlib.pyplot as plt
-    plt.imshow(img_list[0])
+    # import matplotlib.pyplot as plt
+    # plt.imshow(img_list[0])
     # plt.plot(tissue_contour[:, 1], tissue_contour[:, 0], 'r-o')
-    plt.plot(pt1_1, pt1_0, 'bo')
-    plt.plot(pt2_1, pt2_0, 'go')
+    # plt.plot(pt1_1, pt1_0, 'bo')
+    # plt.plot(pt2_1, pt2_0, 'go')
+    tissue_mask = np.zeros((100, 200))
+    wound_mask = np.zeros((100, 200))
+    tissue_width, area, kappa_1, kappa_2, pt1_1_orig, pt1_0_orig, pt2_1_orig, pt2_0_orig, tissue_contour = com.tissue_parameters_zoom(tissue_mask, wound_mask)
+    assert np.isclose(tissue_width, 0)
+    assert np.isclose(area, 0.0)
+    assert np.isclose(kappa_1, 0.0)
+    assert np.isclose(kappa_2, 0.0)
+    assert np.isclose(pt1_1_orig, 0.0)
+    assert np.isclose(pt1_0_orig, 0.0)
+    assert np.isclose(pt2_0_orig, 0.0)
+    assert np.isclose(pt2_1_orig, 0.0)
+    assert tissue_contour is None
 
 
 def test_contour_all_and_wound_parameters_all_and_tissue_parameters_all():
@@ -372,7 +420,8 @@ def test_contour_all_and_wound_parameters_all_and_tissue_parameters_all():
     thresholded_list = seg.threshold_all(tiff_list, threshold_function_idx)
     tissue_mask_list, wound_mask_list, wound_region_list = seg.mask_all(thresholded_list, 1)
     contour_list = seg.contour_all(wound_mask_list)
-    area_list, axis_major_length_list, axis_minor_length_list = com.wound_parameters_all(wound_region_list)
+    area_list, axis_major_length_list, axis_minor_length_list = com.wound_parameters_all(tiff_list[0], contour_list)
+    # area_list, axis_major_length_list, axis_minor_length_list = com.wound_parameters_all(wound_region_list)
     zoom_fcn_idx = 1
     tissue_parameter_list = com.tissue_parameters_all(tissue_mask_list, wound_mask_list, zoom_fcn_idx)
     assert len(tissue_mask_list) == 5
@@ -390,6 +439,37 @@ def test_contour_all_and_wound_parameters_all_and_tissue_parameters_all():
     assert np.min(axis_minor_length_list) >= 0
     for kk in range(0, 5):
         assert axis_major_length_list[kk] >= axis_minor_length_list[kk]
+
+
+def test_get_tissue_width_rotated():
+    tissue_mask_robust = np.zeros((100, 100))
+    tissue_mask_robust[40:61, 30:81] = 1
+    tissue_mask_robust = com.rot_image(tissue_mask_robust, 50, 50, np.pi / 4.0)
+    tissue_width, pt1_0, pt1_1, pt2_0, pt2_1 = com.get_tissue_width(tissue_mask_robust)
+    assert np.isclose(tissue_width, 20.0, 3.0)
+    dist = ((pt1_0 - pt2_0) ** 2.0 + (pt1_1 - pt2_1) ** 2.0) ** 0.5
+    assert np.isclose(dist, 20, 3)
+
+
+def test_get_tissue_width_real():
+    file_path = glob_ph1("test_ph1_movie_mini_Anish")[0]
+    example_file = io.imread(file_path)
+    thresh_img = seg.threshold_array(example_file, 4)
+    tissue_mask, wound_mask, _ = seg.isolate_masks(thresh_img, 1)
+    tissue_mask_robust = seg.make_tissue_mask_robust(tissue_mask, wound_mask)
+    tissue_width, pt1_0_orig, pt1_1_orig, pt2_0_orig, pt2_1_orig = com.get_tissue_width(tissue_mask_robust)
+    dist = ((pt1_0_orig - pt2_0_orig) ** 2.0 + (pt1_1_orig - pt2_1_orig) ** 2.0) ** 0.5
+    assert np.isclose(dist, tissue_width)
+
+
+def test_wound_parameters_all_none():
+    img = np.zeros((100, 100))
+    contour_list = [None, None, None]
+    area_list, maj_list, min_list = com.wound_parameters_all(img, contour_list)
+    for kk in range(0, 3):
+        assert area_list[kk] == 0
+        maj_list[kk] == 0
+        min_list[kk] == 0
 
 
 def test_tissue_parameters_anish():
@@ -425,24 +505,102 @@ def test_tissue_parameters_anish():
     assert tissue_contour.shape[0] > 100
 
 
-def test_check_broken_tissue_all():
-    tissue_mask_list = []
-    for kk in range(0, 3):
-        tissue_mask = np.zeros((10, 10))
-        tissue_mask[3:7, 3:7] = 1
-        tissue_mask_list.append(tissue_mask)
-    is_broken_list = com.check_broken_tissue_all(tissue_mask_list)
-    for bb in is_broken_list:
-        assert bb is False
-
-
-def test_is_broken_small():
+def test_check_broken_tissue():
     tissue_mask_orig = np.zeros((100, 100))
     tissue_mask_orig[20:75, 20:75] = 1
     tissue_mask = np.zeros((100, 100))
     tissue_mask[50:55, 0:55] = 1
     is_broken = com.check_broken_tissue(tissue_mask, tissue_mask_orig)
     assert is_broken is True
+
+
+def test_split_into_four_corners_with_pillars():
+    tissue_mask = np.zeros((8,8))
+    tissue_mask[2:6,2:6] = 1
+    pillar_mask_list = seg.get_pillar_mask_list(tissue_mask,4)
+    pillar_mask_list[0][1,1] = False
+    pillar_mask_list[1][-2,-2] = False
+    pillar_mask_list[2][1,-2] = False
+    pillar_mask_list[3][-2,1] = False
+    for pil_ind,pillar_mask in enumerate(pillar_mask_list):
+        pillar_mask_list[pil_ind] = seg.invert_mask(pillar_mask).astype(np.uint8)
+    tissue_quarter_masks = com.split_into_four_corners_with_pillars(
+        tissue_mask,pillar_mask_list,0
+    )
+    assert len(tissue_quarter_masks) == 4
+    assert isinstance(tissue_quarter_masks[0],np.ndarray)
+
+
+def test_obtain_tissue_quarters_area():
+    tissue_mask = np.zeros((8,8))
+    tissue_mask[2:6,2:6] = 1
+    pillar_mask_list = seg.get_pillar_mask_list(tissue_mask,4)
+    pillar_mask_list[0][1,1] = False
+    pillar_mask_list[1][-2,-2] = False
+    pillar_mask_list[2][1,-2] = False
+    pillar_mask_list[3][-2,1] = False
+    for pil_ind,pillar_mask in enumerate(pillar_mask_list):
+        pillar_mask_list[pil_ind] = seg.invert_mask(pillar_mask).astype(np.uint8)
+    Qlist,tissue_quarter_masks=com.obtain_tissue_quarters_area(
+        tissue_mask,pillar_mask_list,0
+    )
+    assert isinstance(Qlist,list)
+    assert isinstance(tissue_quarter_masks[0],np.ndarray)
+
+
+def test_binary_mask_IOU():
+    mask1 = np.zeros((100, 100))
+    mask2 = np.ones((100, 100))
+    iou = com.binary_mask_IOU(mask1, mask2)
+    assert iou == 0
+    mask1 = np.ones((100, 100))
+    mask2 = np.ones((100, 100))
+    iou = com.binary_mask_IOU(mask1, mask2)
+    assert iou == 1
+    mask1 = np.ones((100, 100))
+    mask2 = np.ones((100, 100))
+    mask2[0:50, :] = 0
+    iou = com.binary_mask_IOU(mask1, mask2)
+    assert iou > 0 and iou < 1
+
+
+def test_check_broken_tissue_zoom():
+    is_broken_list = []
+    folder_path = example_path("test_zoom_is_broken")
+    input_dict, input_path_dict, _ = ia.input_info_to_dicts(folder_path)
+    folder_path = input_path_dict["ph1_images_path"]
+    img_list = ia.read_all_tiff(folder_path)
+    threshold_function_idx = seg.select_threshold_function(input_dict, False, False, True)
+    thresholded_list = seg.threshold_all(img_list, threshold_function_idx)
+    tissue_mask_list, wound_mask_list, _ = seg.mask_all(thresholded_list, threshold_function_idx)
+    for kk in range(0, int(len(img_list) / 2)):
+        ix_orig = kk * 2
+        ix_consider = kk * 2 + 1
+        tissue_mask_orig = tissue_mask_list[ix_orig]
+        wound_mask_orig = wound_mask_list[ix_orig]
+        is_broken = com.check_broken_tissue_zoom(tissue_mask_list[ix_consider], wound_mask_list[ix_consider], tissue_mask_orig, wound_mask_orig)
+        is_broken_list.append(is_broken)
+    ground_truth = [True, False, True, False]
+    for kk in range(0, len(ground_truth)):
+        assert ground_truth[kk] is is_broken_list[kk]
+
+
+def test_check_broken_tissue_all():
+    tissue_mask_list = []
+    wound_mask_list = []
+    for kk in range(0, 3):
+        tissue_mask = np.zeros((10, 10))
+        tissue_mask[3:7, 3:7] = 1
+        tissue_mask_list.append(tissue_mask)
+        wound_mask_list.append(np.zeros((10, 10)))
+    is_broken_list = com.check_broken_tissue_all(tissue_mask_list, wound_mask_list)
+    print(is_broken_list)
+    for bb in is_broken_list:
+        assert bb is False
+    is_broken_list = com.check_broken_tissue_all(tissue_mask_list, wound_mask_list, False, 2)
+    print(is_broken_list)
+    for bb in is_broken_list:
+        assert bb is False
 
 
 def test_is_broken_example():
@@ -453,11 +611,62 @@ def test_is_broken_example():
     threshold_function_idx = seg.select_threshold_function(input_dict, False, False, True)
     thresholded_list = seg.threshold_all(img_list, threshold_function_idx)
     tissue_mask_list, _, _ = seg.mask_all(thresholded_list, threshold_function_idx)
-    is_broken_list = com.check_broken_tissue_all(tissue_mask_list, True)
+    is_broken_list = com.check_broken_tissue_all(tissue_mask_list, [], True, zoom_type=2)
     assert is_broken_list[0] is False
     assert is_broken_list[1] is True
     assert is_broken_list[2] is True
     assert is_broken_list[3] is True
+
+
+# version that is more for debugging method than for testing 
+# def test_check_broken_tissue_zoom():
+#     import matplotlib.pyplot as plt
+#     is_broken_list = []
+#     iou_list = []
+#     folder_path = example_path("test_zoom_orig_compare")
+#     input_dict, input_path_dict, _ = ia.input_info_to_dicts(folder_path)
+#     folder_path = input_path_dict["ph1_images_path"]
+#     img_list = ia.read_all_tiff(folder_path)
+#     path_list = ia.image_folder_to_path_list(folder_path)
+#     threshold_function_idx = seg.select_threshold_function(input_dict, False, False, True)
+#     thresholded_list = seg.threshold_all(img_list, threshold_function_idx)
+#     tissue_mask_list, wound_mask_list, _ = seg.mask_all(thresholded_list, threshold_function_idx)
+#     for kk in range(0, len(img_list)):
+#         ix_orig = kk - kk % 3
+#         tissue_mask_orig = tissue_mask_list[ix_orig]
+#         wound_mask_orig = wound_mask_list[ix_orig]
+#         ti = str(path_list[kk]).split("/")[-1]
+#         is_broken, iou_masks = com.check_broken_tissue_zoom(tissue_mask_list[kk], wound_mask_list[kk], tissue_mask_orig, wound_mask_orig)
+#         is_broken_list.append(is_broken)
+#         print(ti, is_broken)
+#         plt.figure()
+#         plt.imshow(tissue_mask_list[kk])
+#         plt.title(ti + "broken:" + str(is_broken) + " iou: %0.2f" % (iou_masks))
+#         iou_list.append(iou_masks)
+#     aa = 44
+
+
+# def test_check_broken_tissue_zoom():
+#     import matplotlib.pyplot as plt
+#     folder_path = example_path("test_zoom")
+#     input_dict, input_path_dict, _ = ia.input_info_to_dicts(folder_path)
+#     folder_path = input_path_dict["ph1_images_path"]
+#     img_list = ia.read_all_tiff(folder_path)
+#     path_list = ia.image_folder_to_path_list(folder_path)
+#     threshold_function_idx = seg.select_threshold_function(input_dict, False, False, True)
+#     thresholded_list = seg.threshold_all(img_list, threshold_function_idx)
+#     tissue_mask_list, _, _ = seg.mask_all(thresholded_list, threshold_function_idx)
+#     # check individual tissues
+#     is_broken_list = []
+#     for kk in range(0, len(img_list)):
+#         ti = str(path_list[kk]).split("/")[-1]
+#         is_broken = com.check_broken_tissue_zoom(tissue_mask_list[kk])
+#         is_broken_list.append(is_broken)
+#         print(ti, is_broken)
+#         plt.figure()
+#         plt.imshow(tissue_mask_list[kk])
+#         plt.title(ti + "broken:" + str(is_broken))
+#     aa = 44
 
 
 def test_is_broken_anish():
@@ -468,7 +677,8 @@ def test_is_broken_anish():
     threshold_function_idx = seg.select_threshold_function(input_dict, False, False, True)
     thresholded_list = seg.threshold_all(img_list, threshold_function_idx)
     tissue_mask_list, _, _ = seg.mask_all(thresholded_list, threshold_function_idx)
-    is_broken_list = com.check_broken_tissue_all(tissue_mask_list)
+    pillar_mask_list = seg.get_pillar_mask_list(img_list[0],4)
+    is_broken_list = com.check_broken_tissue_all(tissue_mask_list,zoom_type=2,pillar_mask_list=pillar_mask_list)
     for kk in range(0, len(is_broken_list)):
         assert is_broken_list[kk] is True
 
@@ -545,6 +755,13 @@ def test_check_wound_closed_is_closed():
     assert check_closed is True
 
 
+def test_check_wound_closed_zoom_none():
+    tissue_mask = np.zeros((100, 100))
+    wound_region = None
+    is_closed = com.check_wound_closed_zoom(tissue_mask, wound_region)
+    assert is_closed
+
+
 def test_check_wound_closed_all():
     folder_path = example_path("test_mini_movie_closing")
     _, input_path_dict, _ = ia.input_info_to_dicts(folder_path)
@@ -614,57 +831,6 @@ def test_mask_to_area():
 #         plt.plot(pt1_0, pt1_1, 'bo')
 #         plt.plot(pt2_0, pt2_1, 'go')
 
-def test_ix_loop():
-    val = 5
-    num_pts_contour = 10
-    val_new = com.ix_loop(val, num_pts_contour)
-    assert val == val_new
-    val = 11
-    val_new = com.ix_loop(val, num_pts_contour)
-    assert val_new == 1
-    val = -3
-    val_new = com.ix_loop(val, num_pts_contour)
-    assert val_new == 7
-
-
-def test_get_contour_width():
-    val1 = 100
-    val2 = 200
-    array = np.zeros((val2 * 5, val2 * 5))
-    array[val2:val2 * 2, val1:val1 * 2] = 1
-    contour = seg.mask_to_contour(array)
-    regions_all = seg.get_region_props(array)
-    region = seg.get_largest_regions(regions_all, 1)[0]
-    _, tissue_axis_major_length, tissue_axis_minor_length, centroid_row, centroid_col, _, _, orientation = seg.extract_region_props(region)
-    width, idx_a, idx_b = com.get_contour_width(contour, centroid_row, centroid_col, tissue_axis_major_length, tissue_axis_minor_length, orientation)
-    assert width < val1
-    assert width > val1 * 0.9
-    p0a = contour[idx_a, 0]
-    p1a = contour[idx_a, 1]
-    p0b = contour[idx_b, 0]
-    p1b = contour[idx_b, 1]
-    dist = ((p0a - p0b)**2.0 + (p1a - p1b)**2.0) ** 0.5
-    assert pytest.approx(dist, .1) == width
-
-
-def test_include_points_contour():
-    val1 = 100
-    val2 = 200
-    array = np.zeros((val2 * 10, val2 * 10))
-    array[val2:val2 * 2, val1:val1 * 2] = 1
-    contour = seg.mask_to_contour(array)
-    regions_all = seg.get_region_props(array)
-    region = seg.get_largest_regions(regions_all, 1)[0]
-    _, tissue_axis_major_length, tissue_axis_minor_length, centroid_row, centroid_col, _, _, _ = seg.extract_region_props(region)
-    include_idx = com.include_points_contour(contour, centroid_row, centroid_col, tissue_axis_major_length, tissue_axis_minor_length)
-    include_idx = np.asarray(include_idx)
-    # import matplotlib.pyplot as plt
-    # plt.plot(contour[:, 0], contour[:, 1], 'r-')
-    # plt.plot(contour[include_idx, 0], contour[include_idx, 1], 'co')
-    for kk in range(0, include_idx.shape[0]):
-        di = seg.compute_distance(contour[include_idx[kk], 0], contour[include_idx[kk], 1], centroid_row, centroid_col)
-        assert di < 0.25 * (tissue_axis_major_length + tissue_axis_minor_length)
-
 
 def test_get_contour_distance_across():
     rad = 50
@@ -702,11 +868,43 @@ def test_get_contour_distance_across_all():
     # assert np.min(sum_all) > contour.shape[0] * 0.1
 
 
-def test_check_wound_closed_zoom_none():
-    tissue_mask = np.zeros((100, 100))
-    wound_region = None
-    is_closed = com.check_wound_closed_zoom(tissue_mask, wound_region)
-    assert is_closed
+def test_include_points_contour():
+    val1 = 100
+    val2 = 200
+    array = np.zeros((val2 * 10, val2 * 10))
+    array[val2:val2 * 2, val1:val1 * 2] = 1
+    contour = seg.mask_to_contour(array)
+    regions_all = seg.get_region_props(array)
+    region = seg.get_largest_regions(regions_all, 1)[0]
+    _, tissue_axis_major_length, tissue_axis_minor_length, centroid_row, centroid_col, _, _, _ = seg.extract_region_props(region)
+    include_idx = com.include_points_contour(contour, centroid_row, centroid_col, tissue_axis_major_length, tissue_axis_minor_length)
+    include_idx = np.asarray(include_idx)
+    # import matplotlib.pyplot as plt
+    # plt.plot(contour[:, 0], contour[:, 1], 'r-')
+    # plt.plot(contour[include_idx, 0], contour[include_idx, 1], 'co')
+    for kk in range(0, include_idx.shape[0]):
+        di = seg.compute_distance(contour[include_idx[kk], 0], contour[include_idx[kk], 1], centroid_row, centroid_col)
+        assert di < 0.25 * (tissue_axis_major_length + tissue_axis_minor_length)
+
+
+def test_get_contour_width():
+    val1 = 100
+    val2 = 200
+    array = np.zeros((val2 * 5, val2 * 5))
+    array[val2:val2 * 2, val1:val1 * 2] = 1
+    contour = seg.mask_to_contour(array)
+    regions_all = seg.get_region_props(array)
+    region = seg.get_largest_regions(regions_all, 1)[0]
+    _, tissue_axis_major_length, tissue_axis_minor_length, centroid_row, centroid_col, _, _, orientation = seg.extract_region_props(region)
+    width, idx_a, idx_b = com.get_contour_width(contour, centroid_row, centroid_col, tissue_axis_major_length, tissue_axis_minor_length, orientation)
+    assert width < val1
+    assert width > val1 * 0.9
+    p0a = contour[idx_a, 0]
+    p1a = contour[idx_a, 1]
+    p0b = contour[idx_b, 0]
+    p1b = contour[idx_b, 1]
+    dist = ((p0a - p0b)**2.0 + (p1a - p1b)**2.0) ** 0.5
+    assert pytest.approx(dist, .1) == width
 
 
 def test_select_zoom_function():

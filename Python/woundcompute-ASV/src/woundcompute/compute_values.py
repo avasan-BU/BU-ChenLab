@@ -1,8 +1,8 @@
 import cv2
 import math
 import numpy as np
+from scipy.spatial import distance
 from skimage.transform import rotate
-from skimage import measure
 from scipy import ndimage
 from typing import List, Tuple, Union
 from woundcompute import compute_values as com
@@ -22,13 +22,35 @@ def compute_unit_vector(x1: Union[int, float], x2: Union[int, float], y1: Union[
     return vec
 
 
+def compute_distance_multi_point(coords_1: np.ndarray, coords_2: np.ndarray):
+    """Find the shortest distance between points in two arrays.
+    Each array is formatted idx_0 points, idx_1 points."""
+    # maximum array size -- downsample
+    upper_lim = 1000
+    if coords_1.shape[0] > upper_lim:
+        val = int(coords_1.shape[0] / upper_lim)
+        coords_1 = coords_1[::val, :]
+    if coords_2.shape[0] > upper_lim:
+        val = int(coords_2.shape[0] / upper_lim)
+        coords_2 = coords_2[::val, :]
+    arr = distance.cdist(coords_1, coords_2, 'euclidean')
+    ind = np.unravel_index(np.argmin(arr, axis=None), arr.shape)
+    coords_1_idx = ind[0]
+    coords_2_idx = ind[1]
+    pt1_0_orig = coords_1[coords_1_idx, 1]
+    pt1_1_orig = coords_1[coords_1_idx, 0]
+    pt2_0_orig = coords_2[coords_2_idx, 1]
+    pt2_1_orig = coords_2[coords_2_idx, 0]
+    return pt1_0_orig, pt1_1_orig, pt2_0_orig, pt2_1_orig
+
+
 def box_to_unit_vec(box: np.ndarray) -> np.ndarray:
     """Given the rectangular box. Will compute the unit vector of the longest side."""
     side_1 = compute_distance(box[0, 0], box[1, 0], box[0, 1], box[1, 1])
     side_2 = compute_distance(box[1, 0], box[2, 0], box[1, 1], box[2, 1])
     if side_1 > side_2:
         # side_1 is the long axis
-        vec = compute_unit_vector(box[0, 0], box[1, 0], box[0, 1], box[1, 1])
+        vec = compute_unit_vector(box[1, 0], box[0, 0], box[1, 1], box[0, 1])
     else:
         # side_2 is the long axis
         vec = compute_unit_vector(box[1, 0], box[2, 0], box[1, 1], box[2, 1])
@@ -119,7 +141,7 @@ def get_local_curvature(contour: np.ndarray, mask: np.ndarray, ix_center: int, s
 
 
 def mask_to_box(mask: np.ndarray, border: int = 0) -> np.ndarray:
-    """Given a mask. Will return the minimum area bounding rectangle."""
+    """Given a mask. Will return the minimum area bounding rectangle."""    
     # insert borders to the mask
     if border > 0:
         mask_mod = insert_borders(mask, border)
@@ -127,10 +149,11 @@ def mask_to_box(mask: np.ndarray, border: int = 0) -> np.ndarray:
         mask_mod = mask
     # find contour
     mask_mod_one = (mask_mod > 0).astype(np.float64)
-    mask_thresh_blur = ndimage.gaussian_filter(mask_mod_one, 1)
-    cnts = measure.find_contours(mask_thresh_blur, 0.75)[0].astype(np.int32)
+    # mask_thresh_blur = ndimage.gaussian_filter(mask_mod_one, 1)
+    # cnts = measure.find_contours(mask_thresh_blur, 0.75)[0].astype(np.int32)
+    coordinates = np.column_stack(np.where(mask_mod_one > 0))
     # find minimum area bounding rectangle
-    rect = cv2.minAreaRect(cnts)
+    rect = cv2.minAreaRect(coordinates)
     box = np.int0(cv2.boxPoints(rect))
     return box
 
@@ -240,6 +263,76 @@ def get_tissue_width(tissue_mask_robust: np.ndarray, width_buffer: int = 5) -> f
     return tissue_width, pt1_0_orig, pt1_1_orig, pt2_0_orig, pt2_1_orig
 
 
+def get_tissue_width_zoom(tissue_mask: np.ndarray, wound_mask: np.ndarray):
+    border = 5
+    tissue_mask_robust = seg.make_tissue_mask_robust(tissue_mask, wound_mask, border)
+    border = 1
+    tissue_mask_robust = seg.insert_borders(tissue_mask_robust, border, 1)
+    background_mask = tissue_mask_robust < 0.5
+    border = 10
+    background_mask_borders = seg.insert_borders(background_mask, border)
+    region_props = seg.get_region_props(background_mask_borders)
+    num_regions = 2
+    regions_list = seg.get_roundest_regions(region_props, num_regions)
+    # if there aren't sufficient regions (i.e., fewer than 2) to compute tissue width
+    if len(regions_list) < 2:
+        tissue_width = 0
+        pt1_0_orig = 0
+        pt1_1_orig = 0
+        pt2_0_orig = 0
+        pt2_1_orig = 0
+    else:
+        coords_1 = regions_list[0].coords
+        coords_2 = regions_list[1].coords
+        pt1_0_orig, pt1_1_orig, pt2_0_orig, pt2_1_orig = compute_distance_multi_point(coords_1, coords_2)
+        tissue_width = compute_distance(pt1_0_orig, pt2_0_orig, pt1_1_orig, pt2_1_orig)
+    return tissue_width, pt1_0_orig, pt1_1_orig, pt2_0_orig, pt2_1_orig
+
+
+# def get_tissue_width_zoom(tissue_mask_robust: np.ndarray, width_buffer: int = 5):
+#     border_buffer = 10
+#     tissue_mask_robust_border = seg.insert_borders(tissue_mask_robust, border_buffer, 1)
+#     non_tissue = tissue_mask_robust_border < 0.5
+#     regions_list = seg.get_region_props(non_tissue)
+#     largest_region = seg.get_largest_regions(regions_list, 1)[0]
+#     ang = largest_region.orientation
+#     if ang < 0:
+#         ang += np.pi / 2.0
+#     else:
+#         ang -= np.pi / 2.0
+#     rot_mat = np.asarray([[np.cos(ang), -1.0 * np.sin(ang)], [np.sin(ang), np.cos(ang)]])
+#     # vec = [np.cos(ang), np.sin(ang)]
+#     center_row = int(tissue_mask_robust.shape[0] / 2.0)
+#     center_col = int(tissue_mask_robust.shape[1] / 2.0)
+#     rot_mask = rot_image(tissue_mask_robust, center_row, center_col, ang)
+#     tissue_width_all = []
+#     min_row_all = []
+#     max_row_all = []
+#     for kk in range(int(-1.0 * width_buffer), int(width_buffer)):
+#         center_width = np.nonzero(rot_mask[:, int(center_col + kk)] > 0)
+#         min_row = np.min(center_width)
+#         max_row = np.max(center_width)
+#         tissue_width_all.append(max_row - min_row)
+#         min_row_all.append(min_row)
+#         max_row_all.append(max_row)
+#     tissue_width = np.mean(tissue_width_all)
+#     # add in points --> points in un-rotated coordinate system
+#     pt1_0 = center_col
+#     pt1_1 = np.mean(min_row_all)
+#     pt2_0 = center_col
+#     pt2_1 = np.mean(max_row_all)
+#     row_pts = np.asarray([pt1_1, pt2_1])
+#     col_pts = np.asarray([pt1_0, pt2_0])
+#     # rotate points back to original coordinate system
+#     inv_rot_mat = invert_rot_mat(rot_mat)
+#     new_row_pts, new_col_pts = rotate_points(row_pts, col_pts, inv_rot_mat, center_row, center_col)
+#     pt1_0_orig = new_col_pts[0]
+#     pt1_1_orig = new_row_pts[0]
+#     pt2_0_orig = new_col_pts[1]
+#     pt2_1_orig = new_row_pts[1]
+#     return tissue_width, pt1_0_orig, pt1_1_orig, pt2_0_orig, pt2_1_orig
+
+
 def compute_dist_line_pt(pt0, pt1, line):
     dist_all = ((line[:, 0] - pt0) ** 2.0 + (line[:, 1] - pt1) ** 2.0) ** 0.5
     return dist_all
@@ -260,24 +353,44 @@ def tissue_parameters(tissue_mask: np.ndarray, wound_mask: np.ndarray):
     return tissue_width, area, kappa_1, kappa_2, pt1_1_orig, pt1_0_orig, pt2_1_orig, pt2_0_orig, tissue_contour
 
 
-def tissue_parameters_zoom(tissue_mask: np.ndarray, wound_mask: np.ndarray) -> Union[float, int]:
-    """Given a tissue mask. Will compute and return key properties."""
+def tissue_parameters_zoom(tissue_mask: np.ndarray, wound_mask: np.ndarray):
     area = np.sum(tissue_mask)
+    border = 10
+    tissue_mask_robust = seg.make_tissue_mask_robust(tissue_mask, wound_mask, border)
+    tissue_width, pt1_0_orig, pt1_1_orig, pt2_0_orig, pt2_1_orig = get_tissue_width_zoom(tissue_mask, wound_mask)
     tissue_mask_robust = seg.make_tissue_mask_robust(tissue_mask, wound_mask)
-    # tm_c_0, tm_c_1 = get_mean_center(tissue_mask_robust)
     tissue_contour = seg.mask_to_contour(tissue_mask_robust)
-    tissue_regions_all = seg.get_region_props(tissue_mask_robust)
-    tissue_region = seg.get_largest_regions(tissue_regions_all, 1)[0]
-    _, tissue_axis_major_length, tissue_axis_minor_length, centroid_row, centroid_col, _, _, orientation = seg.extract_region_props(tissue_region)
-    width, contour_idx_0, contour_idx_1 = get_contour_width(tissue_contour, centroid_row, centroid_col, tissue_axis_major_length, tissue_axis_minor_length, orientation)
-    sample_dist = np.min([100, tissue_contour.shape[0] * 0.1])
-    kappa_1 = get_local_curvature(tissue_contour, tissue_mask_robust, contour_idx_0, sample_dist)
-    kappa_2 = get_local_curvature(tissue_contour, tissue_mask_robust, contour_idx_1, sample_dist)
-    pt1_0 = tissue_contour[contour_idx_0, 0]
-    pt1_1 = tissue_contour[contour_idx_0, 1]
-    pt2_0 = tissue_contour[contour_idx_1, 0]
-    pt2_1 = tissue_contour[contour_idx_1, 1]
-    return width, area, kappa_1, kappa_2, pt1_0, pt1_1, pt2_0, pt2_1, tissue_contour
+    if tissue_width == 0:
+        return tissue_width, area, 0, 0, pt1_1_orig, pt1_0_orig, pt2_1_orig, pt2_0_orig, tissue_contour
+    else:
+        sample_dist = np.min([100, tissue_contour.shape[0] * 0.1])
+        dist_pt1 = compute_dist_line_pt(pt1_0_orig, pt1_1_orig, tissue_contour)
+        dist_pt2 = compute_dist_line_pt(pt2_0_orig, pt2_1_orig, tissue_contour)
+        contour_idx_0 = np.argmin(dist_pt1)
+        contour_idx_1 = np.argmin(dist_pt2)
+        kappa_1 = get_local_curvature(tissue_contour, tissue_mask_robust, contour_idx_0, sample_dist)
+        kappa_2 = get_local_curvature(tissue_contour, tissue_mask_robust, contour_idx_1, sample_dist)
+        return tissue_width, area, kappa_1, kappa_2, pt1_1_orig, pt1_0_orig, pt2_1_orig, pt2_0_orig, tissue_contour
+
+
+# def tissue_parameters_zoom(tissue_mask: np.ndarray, wound_mask: np.ndarray) -> Union[float, int]:
+#     """Given a tissue mask. Will compute and return key properties."""
+#     area = np.sum(tissue_mask)
+#     tissue_mask_robust = seg.make_tissue_mask_robust(tissue_mask, wound_mask)
+#     # tm_c_0, tm_c_1 = get_mean_center(tissue_mask_robust)
+#     tissue_contour = seg.mask_to_contour(tissue_mask_robust)
+#     tissue_regions_all = seg.get_region_props(tissue_mask_robust)
+#     tissue_region = seg.get_largest_regions(tissue_regions_all, 1)[0]
+#     _, tissue_axis_major_length, tissue_axis_minor_length, centroid_row, centroid_col, _, _, orientation = seg.extract_region_props(tissue_region)
+#     width, contour_idx_0, contour_idx_1 = get_contour_width(tissue_contour, centroid_row, centroid_col, tissue_axis_major_length, tissue_axis_minor_length, orientation)
+#     sample_dist = np.min([100, tissue_contour.shape[0] * 0.1])
+#     kappa_1 = get_local_curvature(tissue_contour, tissue_mask_robust, contour_idx_0, sample_dist)
+#     kappa_2 = get_local_curvature(tissue_contour, tissue_mask_robust, contour_idx_1, sample_dist)
+#     pt1_0 = tissue_contour[contour_idx_0, 0]
+#     pt1_1 = tissue_contour[contour_idx_0, 1]
+#     pt2_0 = tissue_contour[contour_idx_1, 0]
+#     pt2_1 = tissue_contour[contour_idx_1, 1]
+#     return width, area, kappa_1, kappa_2, pt1_0, pt1_1, pt2_0, pt2_1, tissue_contour
 
 
 def tissue_parameters_all(tissue_mask_list: List, wound_mask_list: List, zoom_fcn_idx: int) -> List:
@@ -336,20 +449,217 @@ def check_broken_tissue(tissue_mask: np.ndarray, tissue_mask_orig: np.ndarray = 
     min_area = np.min(Q_list)
     max_area = np.max(Q_list)
     mean_area = np.mean(Q_list)
-    if min_area / max_area < 0.25 or min_area / mean_area < 0.5:
+    if min_area / max_area < 0.25 or min_area / mean_area < 0.60:
         is_broken = True
         return is_broken
     return is_broken
 
 
-def check_broken_tissue_all(tissue_mask_list: List, compare_orig: bool = False) -> List:
+def split_into_four_corners_with_pillars(
+    tissue_mask:np.ndarray,
+    pillar_mask_list:List[np.ndarray],
+    pillar_mask_fill_border:int=10,
+    )->List[np.ndarray]:
+    '''Given a tissue mask and a list of pillar masks, split the tissue mask into
+    four tissue quarter masks using the bounding box of the pillars.'''
+    
+    pillar_mask = seg.mask_list_to_single_mask(pillar_mask_list)
+    box_raw = seg.pillar_mask_to_rotated_box(pillar_mask,pillar_mask_fill_border)
+    box = np.zeros_like(box_raw)
+    box[:,0],box[:,1]=box_raw[:,1],box_raw[:,0]
+
+    # sort the box points to ensure consistent ordering
+    box = box[np.argsort(box[:, 0])]
+    left = box[:2]
+    right = box[2:]
+    left = left[np.argsort(left[:, 1])]
+    right = right[np.argsort(right[:, 1])]
+    box = np.vstack((left, right))
+
+    mid_top = (box[1] + box[3]) // 2
+    mid_bottom = (box[0] + box[2]) // 2
+    mid_left = (box[0] + box[1]) // 2
+    mid_right = (box[2] + box[3]) // 2
+    center = (mid_left + mid_right) // 2
+
+    height, width = tissue_mask.shape
+    mask_quarters = []
+    for i in range(4):
+        quarter_mask = np.zeros((height, width), dtype=np.uint8)
+        
+        if i == 0:  # Top-left quarter
+            pts = np.array([box[1]+[2,1], mid_left+[2,0], center, mid_top+[-2,0]])
+        elif i == 1:  # Top-right quarter
+            pts = np.array([mid_top, center, mid_right, box[3]])
+        elif i == 2:  # Bottom-left quarter
+            pts = np.array([mid_left, box[0], mid_bottom, center])
+        else:  # Bottom-right quarter
+            pts = np.array([center, mid_bottom, box[2], mid_right])
+        
+        cv2.fillPoly(quarter_mask, [pts], 255)
+        mask_quarters.append(quarter_mask)
+
+    tissue_mask = tissue_mask.astype(np.uint8)
+    tissue_quarter_masks = []
+    for _,mask_quarter in enumerate(mask_quarters):
+        # tissue_quarter = tissue_mask[mask_quarter>0]
+        mask_quarter = mask_quarter.astype(np.uint8)
+        tissue_quarter = cv2.bitwise_and(tissue_mask, mask_quarter)
+        tissue_quarter_masks.append(tissue_quarter)
+    return tissue_quarter_masks
+
+
+def obtain_tissue_quarters_area(tissue_mask:np.ndarray,pillar_mask_list=List[np.ndarray],border:int=10)->float:
+    '''Given tissue mask and the list of pillar masks, divide the tissue mask into four
+    tissue quarter masks, and return the area of each tissue quarter mask.'''
+    tissue_quarter_masks = split_into_four_corners_with_pillars(tissue_mask,pillar_mask_list,border)
+    Q1_area = np.sum(tissue_quarter_masks[0])/np.amax(tissue_quarter_masks[0])
+    Q2_area = np.sum(tissue_quarter_masks[1])/np.amax(tissue_quarter_masks[1])
+    Q3_area = np.sum(tissue_quarter_masks[2])/np.amax(tissue_quarter_masks[2])
+    Q4_area = np.sum(tissue_quarter_masks[3])/np.amax(tissue_quarter_masks[3])
+    return [Q1_area,Q2_area,Q3_area,Q4_area],tissue_quarter_masks
+
+
+def check_broken_tissue_with_pillars(
+    tissue_mask: np.ndarray,
+    pillar_mask_list:List[np.ndarray],
+    tissue_mask_orig: np.ndarray = None
+    ) -> bool:
+    """Given a tissue mask and list of pillar masks. Will return true if it's a broken tissue."""
+    is_broken = False
+    # test if broken via no segmented regions
+    region_props = seg.get_region_props(tissue_mask)
+    if len(region_props) == 0:
+        return True
+    largest_region = seg.get_largest_regions(region_props, 1)[0]
+    # area, axis_major_length, axis_minor_length, centroid_row, centroid_col, coords, bbox, orientation
+    area, _, _, centroid_row, centroid_col, _, (min_row, min_col, max_row, max_col), _ = seg.extract_region_props(largest_region)
+    # test if broken via being on 1 or 2 pillars (short)
+    pix_mask = tissue_mask.shape[0] * tissue_mask.shape[1]
+    if area < pix_mask * 0.1:
+        is_broken = True
+        return is_broken
+    # test if broken via being on 2 pillars (long)
+    if tissue_mask_orig is None:
+        mask_row_center = tissue_mask.shape[0] / 2.0
+        mask_col_center = tissue_mask.shape[1] / 2.0
+    else:
+        region_props = seg.get_region_props(tissue_mask_orig)
+        largest_region = seg.get_largest_regions(region_props, 1)[0]
+        _, _, _, centroid_row_orig, centroid_col_orig, _, (_, _, _, _), _ = seg.extract_region_props(largest_region)
+        mask_row_center = centroid_row_orig
+        mask_col_center = centroid_col_orig
+    row_fraction_offset = np.abs(centroid_row - mask_row_center) / tissue_mask.shape[0]
+    col_fraction_offset = np.abs(centroid_col - mask_col_center) / tissue_mask.shape[1]
+    if row_fraction_offset > 0.1 or col_fraction_offset > 0.1:
+        is_broken = True
+        return is_broken
+    # test if broken via lack of quad symmetry (on 3 pillars)
+    Q_list,_ = obtain_tissue_quarters_area(tissue_mask,pillar_mask_list)
+    min_area = np.amin(Q_list)
+    max_area = np.amax(Q_list)
+    mean_area = np.mean(Q_list)
+    if min_area / max_area < 0.25 or min_area / mean_area < 0.60:
+        is_broken = True
+        return is_broken
+    return is_broken
+
+
+def binary_mask_IOU(mask1, mask2):   # From the question.
+    mask1_area = np.count_nonzero(mask1 == 1)
+    mask2_area = np.count_nonzero(mask2 == 1)
+    intersection = np.count_nonzero(np.logical_and(mask1 == 1, mask2 == 1))
+    iou = intersection / (mask1_area + mask2_area - intersection)
+    return iou
+
+
+def check_broken_tissue_zoom(tissue_mask: np.ndarray, wound_mask: np.ndarray, tissue_mask_orig: np.ndarray, wound_mask_orig: np.ndarray):
+    # make comparison to original tissue
+    tissue_mask_robust = seg.make_tissue_mask_robust(tissue_mask, wound_mask)
+    tissue_mask_robust_orig = seg.make_tissue_mask_robust(tissue_mask_orig, wound_mask_orig)
+    # comparison metrics -- simple IOU
+    iou_masks = binary_mask_IOU(tissue_mask_robust, tissue_mask_robust_orig)
+    if iou_masks < 0.75:
+        return True #, iou_masks
+    else:
+        return False #, iou_masks
+
+
+# def check_broken_tissue_zoom(tissue_mask: np.ndarray) -> bool:
+#     """Given a tissue mask. Will return true if it's a broken tissue."""
+#     is_broken = False
+#     # test if broken via no segmented regions
+#     region_props = seg.get_region_props(tissue_mask)
+#     if len(region_props) == 0:
+#         return True
+#     # test if broken via being on 2 pillars (long)
+#     largest_region = seg.get_largest_regions(region_props, 1)[0]
+#     # area, axis_major_length, axis_minor_length, centroid_row, centroid_col, coords, bbox, orientation
+#     area, _, _, centroid_row, centroid_col, _, (min_row, min_col, max_row, max_col), _ = seg.extract_region_props(largest_region)
+#     # test if broken via being on 1 or 2 pillars (short)
+#     mask_row_center = tissue_mask.shape[0] / 2.0
+#     mask_col_center = tissue_mask.shape[1] / 2.0
+#     row_fraction_offset = np.abs(centroid_row - mask_row_center) / tissue_mask.shape[0]
+#     col_fraction_offset = np.abs(centroid_col - mask_col_center) / tissue_mask.shape[1]
+#     if row_fraction_offset > 0.25 or col_fraction_offset > 0.25:
+#         is_broken = True
+#         return is_broken
+#     # test if broken via lack of quad symmetry (on 3 pillars)
+#     # create four quadrants based on the center of the FOV
+#     min_row = 0
+#     min_col = 0
+#     max_row = tissue_mask.shape[0]
+#     max_col = tissue_mask.shape[1]
+#     mid_row = int(tissue_mask.shape[0] / 2.0)
+#     mid_col = int(tissue_mask.shape[1] / 2.0)
+#     Q1_area = np.sum(tissue_mask[min_row:mid_row, min_col:mid_col])
+#     Q2_area = np.sum(tissue_mask[mid_row:max_row, min_col:mid_col])
+#     Q3_area = np.sum(tissue_mask[mid_row:max_row, mid_col:max_col])
+#     Q4_area = np.sum(tissue_mask[min_row:mid_row, mid_col:max_col])
+#     # compare Q1 to Q3 ---- and ------ Q2 to Q4
+#     min_Q13 = np.min([Q1_area, Q3_area])
+#     max_Q13 = np.max([Q1_area, Q3_area])
+#     min_Q24 = np.min([Q2_area, Q4_area])
+#     max_Q24 = np.max([Q2_area, Q4_area])
+#     rat_Q13 = min_Q13 / max_Q13
+#     rat_Q24 = min_Q24 / max_Q24
+#     if rat_Q13 < 0.75 or rat_Q24 < 0.75:
+#         is_broken = True
+#         return is_broken
+#     return is_broken
+
+
+def check_broken_tissue_all(
+    tissue_mask_list: List,
+    wound_mask_list: List = [],
+    compare_orig: bool = False,
+    zoom_type: int = 2,
+    pillar_mask_list:List=None) -> List:
     """Given a tissue mask list. Will return a list of booleans specifying if tissue is broken."""
+    
+    if pillar_mask_list and len(pillar_mask_list) == 0:
+        pillar_mask_list=None
+    
     is_broken_list = []
-    for tissue_mask in tissue_mask_list:
-        if compare_orig:
-            is_broken = check_broken_tissue(tissue_mask, tissue_mask_list[0])
-        else:
-            is_broken = check_broken_tissue(tissue_mask)
+    for kk in range(0, len(tissue_mask_list)):
+        tissue_mask = tissue_mask_list[kk]
+        if len(wound_mask_list) > 0:
+            wound_mask = wound_mask_list[kk]
+        if zoom_type == 2 and pillar_mask_list==None:
+            if compare_orig:
+                is_broken = check_broken_tissue(tissue_mask, tissue_mask_list[0])
+            else:
+                is_broken = check_broken_tissue(tissue_mask)
+        elif zoom_type == 2 and pillar_mask_list:
+            if compare_orig:
+                is_broken = check_broken_tissue_with_pillars(tissue_mask, pillar_mask_list,tissue_mask_list[0])
+            else:
+                is_broken = check_broken_tissue_with_pillars(tissue_mask, pillar_mask_list)
+        elif zoom_type == 1:
+            # check_broken_tissue_zoom(tissue_mask: np.ndarray, wound_mask: np.ndarray, tissue_mask_orig: np.ndarray, wound_mask_orig: np.ndarray)
+            # idea for future -->
+            # average the first two masks?? -- for frames 0 + 1
+            is_broken = check_broken_tissue_zoom(tissue_mask, wound_mask, tissue_mask_list[0], wound_mask_list[0])
         is_broken_list.append(is_broken)
     return is_broken_list
 
@@ -379,18 +689,16 @@ def check_inside_box(region: object, bbox1: tuple, bbox2: tuple) -> bool:
 
 
 def check_wound_closed_zoom(tissue_mask: np.ndarray, wound_region: object) -> bool:
-    # use the tissue mask to define an admissible wound region
-    # check to make sure the wound is within that region
-    # check to make sure the wound is above a certain size
-    # get tissue mask bounding box
     if wound_region is None:
         return True
     tissue_object = seg.get_region_props(tissue_mask)[0]
     _, _, _, _, _, _, (min_row, min_col, max_row, max_col), _ = seg.extract_region_props(tissue_object)
     # contract the bounding box to include only the admissible wound area
-    shrink_factor = 0.25
+    shrink_factor = 0.0
+    # whole wound must be inside this box
     bbox_outer = shrink_bounding_box(min_row, min_col, max_row, max_col, shrink_factor)
     shrink_factor = 0.5
+    # centroid of the wound must be inside this
     bbox_inner = shrink_bounding_box(min_row, min_col, max_row, max_col, shrink_factor)
     # make checks on the wound
     is_inside_box = check_inside_box(wound_region, bbox_outer, bbox_inner)
@@ -400,6 +708,32 @@ def check_wound_closed_zoom(tissue_mask: np.ndarray, wound_region: object) -> bo
         return False
     else:
         return True
+
+
+# def check_wound_closed_zoom(tissue_mask: np.ndarray, wound_region: object) -> bool:
+#     # use the tissue mask to define an admissible wound region
+#     # check to make sure the wound is within that region
+#     # check to make sure the wound is above a certain size
+#     # get tissue mask bounding box
+#     if wound_region is None:
+#         return True
+#     tissue_object = seg.get_region_props(tissue_mask)[0]
+#     _, _, _, _, _, _, (min_row, min_col, max_row, max_col), _ = seg.extract_region_props(tissue_object)
+#     # contract the bounding box to include only the admissible wound area
+#     shrink_factor = 0.25
+#     # whole wound must be inside this box
+#     bbox_outer = shrink_bounding_box(min_row, min_col, max_row, max_col, shrink_factor)
+#     shrink_factor = 0.5
+#     # centroid of the wound must be inside this
+#     bbox_inner = shrink_bounding_box(min_row, min_col, max_row, max_col, shrink_factor)
+#     # make checks on the wound
+#     is_inside_box = check_inside_box(wound_region, bbox_outer, bbox_inner)
+#     min_area = (tissue_mask.shape[0] / 100) ** 2.0
+#     is_large_enough = seg.check_above_min_size(wound_region, min_area)
+#     if is_inside_box and is_large_enough:
+#         return False
+#     else:
+#         return True
 
 
 def check_wound_closed(tissue_mask: np.ndarray, wound_region: object):
@@ -450,16 +784,36 @@ def check_wound_closed_all(tissue_mask_list: List, wound_region_list: List, zoom
     return check_wound_closed_list
 
 
-def wound_parameters_all(wound_region_list: List) -> List:
-    """Given a wound regions list. Will return wound properties list."""
+# def wound_parameters_all(wound_region_list: List) -> List:
+#     """Given a wound regions list. Will return wound properties list."""
+#     area_list = []
+#     axis_major_length_list = []
+#     axis_minor_length_list = []
+#     for wound_region in wound_region_list:
+#         area, axis_major_length, axis_minor_length, _, _, _, _, _ = seg.extract_region_props(wound_region)
+#         area_list.append(area)
+#         axis_major_length_list.append(axis_major_length)
+#         axis_minor_length_list.append(axis_minor_length)
+#     return area_list, axis_major_length_list, axis_minor_length_list
+def wound_parameters_all(img: np.ndarray, contour_list: List) -> List:
     area_list = []
     axis_major_length_list = []
     axis_minor_length_list = []
-    for wound_region in wound_region_list:
+    for contour in contour_list:
+        wound_region = seg.contour_to_region(img, contour)
         area, axis_major_length, axis_minor_length, _, _, _, _, _ = seg.extract_region_props(wound_region)
-        area_list.append(area)
-        axis_major_length_list.append(axis_major_length)
-        axis_minor_length_list.append(axis_minor_length)
+        if area is None:
+            area_list.append(0)
+        else:
+            area_list.append(area)
+        if axis_major_length is None:
+            axis_major_length_list.append(0)
+        else:
+            axis_major_length_list.append(axis_major_length)
+        if axis_minor_length is None:
+            axis_minor_length_list.append(0)
+        else:
+            axis_minor_length_list.append(axis_minor_length)
     return area_list, axis_major_length_list, axis_minor_length_list
 
 

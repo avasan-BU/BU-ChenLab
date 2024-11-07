@@ -1,0 +1,325 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AnalysisUIOptions">
+    <option name="ANALYZE_INJECTED_CODE" value="false" />
+  </component>
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="affdf2a6-9296-4f84-8f33-1f75ca35c808" name="Changes" comment="Added readme">
+      <change beforePath="$PROJECT_DIR$/../WoundCompute_Dataset_Interface/.idea/WoundCompute_Dataset_Interface.iml" beforeDir="false" afterPath="$PROJECT_DIR$/../WoundCompute_Dataset_Interface/.idea/WoundCompute_Dataset_Interface.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../WoundCompute_Dataset_Interface/wc_data_functions.py" beforeDir="false" afterPath="$PROJECT_DIR$/../WoundCompute_Dataset_Interface/wc_data_functions.py" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Jupyter Notebook" />
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/../../.." />
+  </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;avasan-BU&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/avasan-BU/BU-ChenLab.git&quot;,
+    &quot;accountId&quot;: &quot;c152af5c-1e1f-451e-9195-311a36f36026&quot;
+  }
+}</component>
+  <component name="MarkdownSettingsMigration">
+    <option name="stateVersion" value="1" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 7
+}</component>
+  <component name="ProjectId" id="2ZEPRMQMbnwPaVIHMevuQPACqD3" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Python.Basic_GUI.executor&quot;: &quot;Run&quot;,
+    &quot;Python.GUI_functions.executor&quot;: &quot;Run&quot;,
+    &quot;Python.Imaris_Data_Extract.executor&quot;: &quot;Run&quot;,
+    &quot;Python.Reorganize_frames.executor&quot;: &quot;Run&quot;,
+    &quot;Python.Wellplate_GUI.executor&quot;: &quot;Run&quot;,
+    &quot;Python.main_multithreaded.executor&quot;: &quot;Run&quot;,
+    &quot;Python.main_multithreaded_v1_5.executor&quot;: &quot;Run&quot;,
+    &quot;Python.main_multithreaded_v2.executor&quot;: &quot;Run&quot;,
+    &quot;Python.main_multithreaded_v3.1.executor&quot;: &quot;Run&quot;,
+    &quot;Python.main_multithreaded_v3.executor&quot;: &quot;Run&quot;,
+    &quot;Python.main_parallelized.executor&quot;: &quot;Run&quot;,
+    &quot;Python.run_wc_main_parallelized.executor&quot;: &quot;Run&quot;,
+    &quot;Python.scratch_1.executor&quot;: &quot;Run&quot;,
+    &quot;Python.scratch_2.executor&quot;: &quot;Run&quot;,
+    &quot;Python.scratch_3.executor&quot;: &quot;Run&quot;,
+    &quot;Python.scratch_4.executor&quot;: &quot;Run&quot;,
+    &quot;Python.scratch_5.executor&quot;: &quot;Run&quot;,
+    &quot;Python.scratch_6.executor&quot;: &quot;Run&quot;,
+    &quot;Python.test.executor&quot;: &quot;Run&quot;,
+    &quot;Python.test2.executor&quot;: &quot;Run&quot;,
+    &quot;Python.thread01.executor&quot;: &quot;Run&quot;,
+    &quot;Python.wc_GUI_functions.executor&quot;: &quot;Run&quot;,
+    &quot;Python.wc_data_functions.executor&quot;: &quot;Run&quot;,
+    &quot;Python.wc_functions.executor&quot;: &quot;Run&quot;,
+    &quot;Python.wc_main_parallelized.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;E:/Code/GitHub/BU-ChenLab/Python/woundcompute-ASV/Dataset_Code_V3&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;run.code.analysis.last.selected.profile&quot;: &quot;aDefault&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.lookFeel&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  },
+  &quot;keyToStringList&quot;: {
+    &quot;com.intellij.ide.scratch.ScratchImplUtil$2/New Scratch File&quot;: [
+      &quot;Python&quot;
+    ]
+  }
+}</component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="E:\Code\GitHub\BU-ChenLab\Python\woundcompute-ASV\Dataset_Code_V3" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="E:\Code\GitHub\BU-ChenLab\Python\woundcompute-ASV\WoundCompute_Dataset_Interface" />
+      <recent name="E:\Code\GitHub\BU-ChenLab\Python\woundcompute-ASV\WoundCompute_Dataset_Interface\Depreciated" />
+      <recent name="E:\Code\GitHub\BU-ChenLab\Python\woundcompute-ASV\Dataset_Code_V3\Depreciated" />
+    </key>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-js-predefined-d6986cc7102b-5c90d61e3bab-JavaScript-PY-242.23726.102" />
+        <option value="bundled-python-sdk-5e1850174b45-399fe30bd8c1-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-242.23726.102" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="affdf2a6-9296-4f84-8f33-1f75ca35c808" name="Changes" comment="" />
+      <created>1701984255257</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1701984255257</updated>
+      <workItem from="1701984256397" duration="4464000" />
+      <workItem from="1713848981255" duration="1827000" />
+      <workItem from="1718681111162" duration="1305000" />
+      <workItem from="1718684657443" duration="870000" />
+      <workItem from="1718713898749" duration="7544000" />
+      <workItem from="1718900957542" duration="1808000" />
+      <workItem from="1721150833229" duration="287000" />
+      <workItem from="1721283753981" duration="20000" />
+      <workItem from="1721284180225" duration="866000" />
+      <workItem from="1721331440341" duration="1976000" />
+      <workItem from="1722467671824" duration="2471000" />
+      <workItem from="1723750441217" duration="90821000" />
+      <workItem from="1724964567218" duration="42860000" />
+      <workItem from="1726365560414" duration="14609000" />
+      <workItem from="1727213348520" duration="610000" />
+      <workItem from="1727217004086" duration="31227000" />
+      <workItem from="1727724508960" duration="10060000" />
+      <workItem from="1727816776495" duration="15482000" />
+      <workItem from="1728306256446" duration="2861000" />
+      <workItem from="1729531919260" duration="14673000" />
+      <workItem from="1730147840400" duration="478000" />
+      <workItem from="1730294871432" duration="23000" />
+      <workItem from="1730294904135" duration="14000" />
+      <workItem from="1730294934010" duration="26000" />
+      <workItem from="1730294971698" duration="5000" />
+      <workItem from="1730294984376" duration="15991000" />
+      <workItem from="1730422565140" duration="21000" />
+      <workItem from="1730422598529" duration="2702000" />
+      <workItem from="1730427357446" duration="14000000" />
+      <workItem from="1730441828717" duration="742000" />
+      <workItem from="1730442730438" duration="15663000" />
+      <workItem from="1730731927423" duration="22589000" />
+      <workItem from="1730778885702" duration="9568000" />
+      <workItem from="1730960863051" duration="4457000" />
+      <workItem from="1730965390931" duration="5743000" />
+      <workItem from="1730992279874" duration="2561000" />
+    </task>
+    <task id="LOCAL-00001" summary="Updated Dataset Code V3 to use multithreading">
+      <created>1724447770405</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1724447770405</updated>
+    </task>
+    <task id="LOCAL-00002" summary="Uploading multithreaded run files">
+      <created>1724447849064</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1724447849064</updated>
+    </task>
+    <task id="LOCAL-00003" summary="Updated main_multithreaded.py to Version 1.4">
+      <created>1724447942467</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1724447942467</updated>
+    </task>
+    <task id="LOCAL-00004" summary="Updated main_multithreaded.py to Version 1.5. Code can now process both Eclipse Ti and Ti2 data. Cyt5 data not verified yet">
+      <created>1724965067578</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1724965067578</updated>
+    </task>
+    <task id="LOCAL-00005" summary="Updated main_multithreaded.py to Version 1.6. Code can now process Eclipse Ti, Ti2, and Cytation data.">
+      <created>1724976763326</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1724976763326</updated>
+    </task>
+    <task id="LOCAL-00006" summary="Updated main_multithreaded.py to Version 1.6. Code can now process Eclipse Ti, Ti2, and Cytation data.">
+      <created>1724976774160</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1724976774160</updated>
+    </task>
+    <task id="LOCAL-00007" summary="Updated main_multithreaded.py to Version 1.7. Code can now process Eclipse Ti, Ti2, and Cytation data.&#10;Updated wc_functions to version 2.5. Corrected bugs in folder sorting process. Added function to move parallelized folders back to the main folder">
+      <created>1726089611126</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1726089611126</updated>
+    </task>
+    <task id="LOCAL-00008" summary="Updated main_multithreaded.py to Version 1.8. Code now sorts files back to main folder and extracts data into excel file&#10;Updated wc_functions to version 2.6. Added data extraction function and excelwriter">
+      <created>1726155787877</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1726155787877</updated>
+    </task>
+    <task id="LOCAL-00009" summary="Updated main_multithreaded.py to Version 1.8. Code now sorts files back to main folder and extracts data into excel file&#10;Updated wc_functions to version 2.6. Added data extraction function and excelwriter&#10;Added Reorganize frames script">
+      <created>1726713729898</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1726713729898</updated>
+    </task>
+    <task id="LOCAL-00010" summary="Bugfixes for parallelization and GUI">
+      <option name="closed" value="true" />
+      <created>1730964256740</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1730964256740</updated>
+    </task>
+    <task id="LOCAL-00011" summary="Bugfixes for parallelization and GUI">
+      <option name="closed" value="true" />
+      <created>1730964821145</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1730964821145</updated>
+    </task>
+    <task id="LOCAL-00012" summary="Added readme">
+      <option name="closed" value="true" />
+      <created>1730964878113</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1730964878113</updated>
+    </task>
+    <task id="LOCAL-00013" summary="Added readme">
+      <option name="closed" value="true" />
+      <created>1730965337972</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1730965337972</updated>
+    </task>
+    <option name="localTasksCounter" value="14" />
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Updated Dataset Code V3 to use multithreading" />
+    <MESSAGE value="Uploading multithreaded run files" />
+    <MESSAGE value="Updated main_multithreaded.py to Version 1.4" />
+    <MESSAGE value="Updated main_multithreaded.py to Version 1.5. Code can now process both Eclipse Ti and Ti2 data. Cyt5 data not verified yet" />
+    <MESSAGE value="Updated main_multithreaded.py to Version 1.6. Code can now process Eclipse Ti, Ti2, and Cytation data." />
+    <MESSAGE value="Updated main_multithreaded.py to Version 1.7. Code can now process Eclipse Ti, Ti2, and Cytation data.&#10;Updated wc_functions to version 2.5. Corrected bugs in folder sorting process. Added function to move parallelized folders back to the main folder" />
+    <MESSAGE value="Updated main_multithreaded.py to Version 1.8. Code now sorts files back to main folder and extracts data into excel file&#10;Updated wc_functions to version 2.6. Added data extraction function and excelwriter" />
+    <MESSAGE value="Updated main_multithreaded.py to Version 1.8. Code now sorts files back to main folder and extracts data into excel file&#10;Updated wc_functions to version 2.6. Added data extraction function and excelwriter&#10;Added Reorganize frames script" />
+    <MESSAGE value="Bugfixes for parallelization and GUI" />
+    <MESSAGE value="Added readme" />
+    <option name="LAST_COMMIT_MESSAGE" value="Added readme" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <default-breakpoints>
+        <breakpoint type="python-exception">
+          <properties notifyOnTerminate="true" exception="BaseException">
+            <option name="notifyOnTerminate" value="true" />
+          </properties>
+        </breakpoint>
+      </default-breakpoints>
+    </breakpoint-manager>
+  </component>
+  <component name="com.intellij.coverage.CoverageDataManagerImpl">
+    <SUITE FILE_PATH="coverage/Dataset_Code_V3$wc_functions_2_2.coverage" NAME="wc_functions_2_2 Coverage Results" MODIFIED="1724962509576" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Dataset_Code_V3$tester.coverage" NAME="tester Coverage Results" MODIFIED="1701986596664" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Dataset_Code_V3$Test.coverage" NAME="Test Coverage Results" MODIFIED="1724546802227" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Dataset_Code_V3$scratch_6.coverage" NAME="scratch_6 Coverage Results" MODIFIED="1730821668951" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$APPLICATION_CONFIG_DIR$/scratches" />
+    <SUITE FILE_PATH="coverage/Dataset_Code_V3$test.coverage" NAME="test Coverage Results" MODIFIED="1730295149416" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Dataset_Code_V3$scratch_5.coverage" NAME="scratch_5 Coverage Results" MODIFIED="1730505497528" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$APPLICATION_CONFIG_DIR$/scratches" />
+    <SUITE FILE_PATH="coverage/Dataset_Code_V3$scratch_2.coverage" NAME="scratch_2 Coverage Results" MODIFIED="1730416481500" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$APPLICATION_CONFIG_DIR$/scratches" />
+    <SUITE FILE_PATH="coverage/Dataset_Code_V3$thread01.coverage" NAME="thread01 Coverage Results" MODIFIED="1730406976616" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/multithread_processes" />
+    <SUITE FILE_PATH="coverage/Dataset_Code_V3$test2.coverage" NAME="test2 Coverage Results" MODIFIED="1727724084195" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Dataset_Code_V3$Wellplate_GUI.coverage" NAME="Wellplate_GUI Coverage Results" MODIFIED="1730295061057" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Dataset_Code_V3$Reorganize_frames.coverage" NAME="Reorganize_frames Coverage Results" MODIFIED="1727835235832" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Dataset_Code_V3$main_multithreaded2.coverage" NAME="main_multithreaded2 Coverage Results" MODIFIED="1726365930974" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Dataset_Code_V3$main_multithreaded_v2.coverage" NAME="main_multithreaded_v2 Coverage Results" MODIFIED="1730415468776" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Dataset_Code_V3$main_multithreaded.coverage" NAME="main_multithreaded Coverage Results" MODIFIED="1730416400325" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Dataset_Code_V3$run_wc_main_parallelized.coverage" NAME="run_wc_main_parallelized Coverage Results" MODIFIED="1730994809156" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/../WoundCompute_Dataset_Interface" />
+    <SUITE FILE_PATH="coverage/Dataset_Code_V3$wc_function_2_1.coverage" NAME="wc_function_2_1 Coverage Results" MODIFIED="1724180681132" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Dataset_Code_V3$wc_GUI_functions.coverage" NAME="wc_GUI_functions Coverage Results" MODIFIED="1730750835977" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Dataset_Code_V3$Basic_GUI.coverage" NAME="Basic_GUI Coverage Results" MODIFIED="1730778951447" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Dataset_Code_V3$Eclipse_Ti_2.coverage" NAME="Eclipse_Ti_2 Coverage Results" MODIFIED="1724963191455" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Dataset_Code_V3$main_multithreaded_v3.coverage" NAME="main_multithreaded_v3 Coverage Results" MODIFIED="1727817324550" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Dataset_Code_V3$scratch_1.coverage" NAME="scratch_1 Coverage Results" MODIFIED="1730417371260" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$APPLICATION_CONFIG_DIR$/scratches" />
+    <SUITE FILE_PATH="coverage/Dataset_Code_V3$scratch_4.coverage" NAME="scratch_4 Coverage Results" MODIFIED="1730442557274" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$APPLICATION_CONFIG_DIR$/scratches" />
+    <SUITE FILE_PATH="coverage/Dataset_Code_V3$Imaris_Data_Extract.coverage" NAME="Imaris_Data_Extract Coverage Results" MODIFIED="1729556327432" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Dataset_Code_V3$wc_data_functions.coverage" NAME="wc_data_functions Coverage Results" MODIFIED="1730781004124" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Dataset_Code_V3$wc_main_parallelized.coverage" NAME="wc_main_parallelized Coverage Results" MODIFIED="1730964000238" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Dataset_Code_V3$GUI_functions.coverage" NAME="GUI_functions Coverage Results" MODIFIED="1730408731498" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Dataset_Code_V3$main_multithreaded_v1_5.coverage" NAME="main_multithreaded_v1_5 Coverage Results" MODIFIED="1727709136381" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Dataset_Code_V3$main_multithreaded___Copy.coverage" NAME="main_multithreaded - Copy Coverage Results" MODIFIED="1724976558111" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Dataset_Code_V3$main_multithreaded_v3_1.coverage" NAME="main_multithreaded_v3.1 Coverage Results" MODIFIED="1727818142692" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Dataset_Code_V3$scratch_3.coverage" NAME="scratch_3 Coverage Results" MODIFIED="1730418859157" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$APPLICATION_CONFIG_DIR$/scratches" />
+    <SUITE FILE_PATH="coverage/Dataset_Code_V3$main.coverage" NAME="main_multithreaded Coverage Results" MODIFIED="1724545864147" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Dataset_Code_V3$main_parallelized.coverage" NAME="main_parallelized Coverage Results" MODIFIED="1730420145199" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Dataset_Code_V3$wc_functions.coverage" NAME="wc_functions Coverage Results" MODIFIED="1730440564967" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Dataset_Code_V3$thread1.coverage" NAME="thread1 Coverage Results" MODIFIED="1724363374620" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/multithread_processes" />
+  </component>
+</project>
