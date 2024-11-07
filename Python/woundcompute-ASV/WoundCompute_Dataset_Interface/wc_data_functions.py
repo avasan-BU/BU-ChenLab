@@ -19,15 +19,16 @@ def extract_data(path_input_fn: str, basename_fn: str, image_type: str, interval
     if not os.path.exists(os.path.join(path_input_fn, 'code_output_' + basename_fn + '.xlsx')):
         workbook = openpyxl.Workbook()
         workbook.save(os.path.join(path_input_fn, 'code_output_' + basename_fn + '.xlsx'))
-
+    metrics = [f for f in metrics if f != 'tissue_parameters_vs_frame.txt']
     for metric in metrics:
-        print(f"Extracting data for {metric.split('_vs_')[0]}...")
-        dfs[metric.split('_vs_')[0]] = pd.DataFrame({'Frame': range(1, frames + 1), 'Time': tlist})
 
-        for file in folder_path_list:
-            dfs[metric.split('_vs_')[0]][file.name] = pd.read_table(os.path.join(file.path, 'segment_' + image_type, metric), header=None)
+            print(f"Extracting data for {metric.split('_vs_')[0]}...")
+            dfs[metric.split('_vs_')[0]] = pd.DataFrame({'Frame': range(1, frames + 1), 'Time': tlist})
 
-        append_to_excel(os.path.join(path_input_fn, 'code_output_' + basename_fn + '.xlsx'), dfs[metric.split('_vs_')[0]], metric.split('_vs_')[0])
+            for file in folder_path_list:
+                dfs[metric.split('_vs_')[0]][file.name] = pd.read_table(os.path.join(file.path, 'segment_' + image_type, metric), header=None, dtype=float)
+
+            append_to_excel(os.path.join(path_input_fn, 'code_output_' + basename_fn + '.xlsx'), dfs[metric.split('_vs_')[0]], metric.split('_vs_')[0])
 
 
     folder_list = [f.name for f in folder_path_list]
@@ -66,46 +67,27 @@ def visualize_data(path_output_in, basename_in, image_type_in, all_data_in, metr
         df = all_data_in[metric]
         time_hours = df['Time']  # Convert time to hours
 
-        # Identify position columns
-        position_columns = [col for col in df.columns if any(pos in col for pos in positions_in)]
 
         # Group data by condition
         grouped_data = {}
-        # Create a folder to store the visualizations
-        if not os.path.exists(os.path.join(path_output_in, basename_in + '_visualizations', metric)):
-            os.makedirs(os.path.join(path_output_in, basename_in + '_visualizations', metric))
+        pattern = re.compile(r'([A-H]\d{2})')
+        positions_filtered = [pattern.search(pos).group(0) for pos in positions_in if pattern.search(pos) is not None]
 
-        for position in positions_in:
-            pattern = re.compile(r'([A-H]\d{2})')
-            print(position)
-            pos2 = pattern.search(position)
-            if pos2 is not None:
-                pos2 = pos2.group()
-
-            print(pos2)
-            condition_info = assigned_df_in[assigned_df_in['Well'] == pos2]
-            if condition_info.empty:
-                print(f"Condition info is empty for {position}")
-                continue  # Skip if no matching condition
-
-            condition_name = condition_info['Condition_Name'].values[0]
-
-            if condition_name not in grouped_data:
-                grouped_data[condition_name] = []
-
-            grouped_data[condition_name].append(df[position])
+        for condition in assigned_df_in['Condition_Name'].unique():
+            wells = assigned_df_in[assigned_df_in['Condition_Name'] == condition]['Well']
+            wells = [pos for pos in positions_in if any(well in pos for well in wells)]
+            grouped_data[condition] = df[wells]
 
         # Plot data for each condition
         plt.figure(figsize=(10, 6))
+        mean = {}
+        std = {}
         for condition_name, data_list in grouped_data.items():
-            print(data_list)
-            data_array = pd.concat(data_list, axis=1)
-            print(data_array)
-            mean = data_array.mean(axis=1)
-            std = data_array.std(axis=1)
+            mean[condition_name] = data_list.mean(axis=1)
+            std[condition_name] = data_list.std(axis=1)
 
-            plt.plot(time_hours, mean, label=condition_name)
-            plt.fill_between(time_hours, mean - std, mean + std, alpha=0.2)
+            plt.plot(time_hours, mean[condition_name], label=condition_name)
+            plt.fill_between(time_hours, mean[condition_name] - std[condition_name], mean[condition_name] + std[condition_name], alpha=0.2)
 
         plt.title(f'{metric} vs Time')
         plt.xlabel('Time (Hours)')
@@ -113,9 +95,12 @@ def visualize_data(path_output_in, basename_in, image_type_in, all_data_in, metr
         plt.legend()
         plt.grid(True)
 
+        # Create a folder to store the visualizations
+        if not os.path.exists(os.path.join(path_output_in, basename_in + '_visualizations', metric)):
+            os.makedirs(os.path.join(path_output_in, basename_in + '_visualizations', metric))
 
         # Save the plot
-        output_filename =os.path.join(path_output_in, basename_in + '_' + metric + '.png')
+        output_filename =os.path.join(path_output_in, basename_in + '_visualizations', metric, basename_in + '_' + metric + '.png')
         plt.savefig(output_filename)
         plt.close()
         print(f"Plots saved in ", output_filename)
