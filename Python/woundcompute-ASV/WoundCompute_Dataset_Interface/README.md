@@ -6,5 +6,5 @@
 python run_wc_main_parallelized.py
 ```
 
-Proper tutoial will be added soon.
+Proper tutorial will be added soon.
 
