@@ -6,7 +6,7 @@
 #
 # Organization: Chen/Eyckmans Lab, Boston University
 #
-# Date: 20240821
+# Date: 20241217
 
 # Description: This script contains functions that are used in the main script, wc_main.py. These functions are used to
 # reorganize the input data into a format that is compatible with the WoundCompute software.
