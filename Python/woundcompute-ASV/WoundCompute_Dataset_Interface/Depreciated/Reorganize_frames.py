@@ -2,8 +2,8 @@ import os
 import matplotlib.pyplot as plt
 
 # Config:
-tissue_dir = 'C:\\Working Folder\\20240927_R7P6_Drug2\\Sorted\\tissue_ai'
-result_grid_filename = 'C:\\Working Folder\\20240927_R7P6_Drug2\\Sorted\\viz'
+tissue_dir = 'C:\\Working Folder\\Peach\\20241108_EMW5_NHDF-SHDF-dECM\\Sorted\\tissue_ai'
+result_grid_filename = 'C:\\Working Folder\\Peach\\20241108_EMW5_NHDF-SHDF-dECM\\Sorted\\tissue_ai_visualizations\\segmentation'
 grid_size_x = 12
 grid_size_y = 9
 result_figsize_resolution_x = grid_size_x*640/100 # 1 = 100px
