@@ -31,7 +31,7 @@ function processFile(location, file) {
 	
 	//print(input+file);
 	open(location + File.separator + file);
-	
+	run("Select None");
 	fname = split(file,".");
 	Stack.getDimensions(width, height, channels, slices, frames);
 	
@@ -44,12 +44,17 @@ function processFile(location, file) {
 		for(n1 = 1; n1 <= slices; n1++) {
 			selectWindow(fname[0]+"-1.tif");
 			Stack.setSlice(n1);
+			
 			run("Measure");
 		}
-	selectWindow("Results");	
+	selectWindow("Results");
+	if (!File.exists(location + File.separator + "Results")) {
+		File.makeDirectory(location + File.separator + "Results");
+	}
 	saveAs("Results", location + File.separator + "Results" + File.separator + fname[0] + ".csv");
 	close("*");
 	run("Clear Results");
+		
 	}
 	else{
 		Print("Incorrect input file format");
