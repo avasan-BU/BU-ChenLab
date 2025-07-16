@@ -6,11 +6,14 @@ import os
 from pathlib import Path
 from skimage import io
 import time
-from typing import List
+from typing import List,Tuple
 import yaml
+from PIL import Image
+from skimage.transform import rescale
 from woundcompute import segmentation as seg
 from woundcompute import compute_values as com
 from woundcompute import texture_tracking as tt
+from woundcompute import post_process as pp
 
 
 def hello_wound_compute() -> str:
@@ -75,29 +78,79 @@ def show_and_save_contour_and_width(
     is_closed: bool,
     points: List,
     save_path: Path,
-    title: str = " "
+    frame_num: int = None,
+    title: str = " ",
+    broken_frame: int = None,
+    closed_frame: int = None,
+    pillars_pos_x: List = None,
+    pillars_pos_y: List = None,
 ) -> None:
     """Given an image, contour, and path location. Will plot and save."""
+    # plt.figure()
+    # plt.imshow(img_array, cmap=plt.cm.gray)
+    # xt = 3.0 * img_array.shape[1] / 8.0
+    # yt = 7.0 * img_array.shape[0] / 8.0
+    # if is_broken:
+    #     plt.text(xt, yt, "broken", color="r", backgroundcolor="w", fontsize=20)
+    # # else:
+    # if points is not None:
+    #     plt.plot(points[1], points[0], 'k-o', linewidth=2.0, antialiased=True)
+    # if is_closed:
+    #     plt.text(xt, yt, "closed", color="r", backgroundcolor="w", fontsize=20)
+    # # else:
+    # if contour is not None:
+    #     plt.plot(contour[:, 1], contour[:, 0], 'r', linewidth=2.0, antialiased=True)
+    # plt.title(title)
+    # plt.axis('off')
+    # plt.tight_layout()
+    # plt.savefig(save_path)
+    # plt.close()
+
+    img_h,img_w = img_array.shape
+    xt_broken = 2.6 * img_w / 8.0
+    yt_broken = 0.8 * img_h / 8.0
+    xt_closed = 2.4 * img_w / 8.0
+    yt_closed = 7.5 * img_h / 8.0
+
+    if img_h > 512 or img_h > 512:
+        scale_factor = 1 / ( (img_w/512 + img_h/512) / 2 )
+        img_array = rescale(img_array,scale_factor,anti_aliasing=True)
+        contour=contour*scale_factor if contour is not None else None
+        points=np.array(points)*scale_factor if points is not None else None
+        pillars_pos_x=pillars_pos_x*scale_factor if pillars_pos_x is not None else None
+        pillars_pos_y=pillars_pos_y*scale_factor if pillars_pos_y is not None else None
+        xt_broken=xt_broken*scale_factor
+        yt_broken=yt_broken*scale_factor
+        xt_closed=xt_closed*scale_factor
+        yt_closed=yt_closed*scale_factor
+    else:
+        scale_factor = 1
+
     plt.figure()
     plt.imshow(img_array, cmap=plt.cm.gray)
-    xt = 3.0 * img_array.shape[1] / 8.0
-    yt = 7.0 * img_array.shape[0] / 8.0
-    if is_broken:
-        plt.text(xt, yt, "broken", color="r", backgroundcolor="w", fontsize=20)
-    # else:
+
+
     if points is not None:
         plt.plot(points[1], points[0], 'k-o', linewidth=2.0, antialiased=True)
-    if is_closed:
-        plt.text(xt, yt, "closed", color="r", backgroundcolor="w", fontsize=20)
-    # else:
+    if is_broken or broken_frame:
+        if broken_frame is None:
+            broken_frame = frame_num
+        plt.text(xt_broken, yt_broken, f"broken at frame {broken_frame}", color="r", backgroundcolor="w", fontsize=17)
+    if is_closed or closed_frame:
+        if closed_frame is None:
+            closed_frame = frame_num
+        plt.text(xt_closed, yt_closed, f"closed at frame {closed_frame}", color="r", backgroundcolor="w", fontsize=17)
     if contour is not None:
         plt.plot(contour[:, 1], contour[:, 0], 'r', linewidth=2.0, antialiased=True)
+    if pillars_pos_x is not None and pillars_pos_y is not None:
+        dot_size = 0.00003 * img_w * img_h * scale_factor
+        plt.scatter(pillars_pos_x,pillars_pos_y,s=dot_size,c='blue')
     plt.title(title)
     plt.axis('off')
     plt.tight_layout()
     plt.savefig(save_path)
     plt.close()
-    return
+    return broken_frame,closed_frame
 
 
 def show_and_save_double_contour(
@@ -398,21 +451,33 @@ def save_all_img_with_contour_and_width(
     contour_list: List,
     tissue_parameters_list: List,
     is_broken_list: List,
-    is_closed_list: List
+    is_closed_list: List,
+    avg_pos_all_x: List = None,
+    avg_pos_all_y: List = None,
 ) -> List:
     "Given segmentation results. Plot and save image and contour."
     file_name_list = []
+    broken_frame = None
+    closed_frame = None
     for kk in range(0, len(img_list)):
         img = img_list[kk]
         cont = contour_list[kk]
         is_broken = is_broken_list[kk]
         is_closed = is_closed_list[kk]
+        if avg_pos_all_x is None:
+            pillars_pos_x = None
+            pillars_pos_y = None
+        else:
+            pillars_pos_x = avg_pos_all_x[kk]
+            pillars_pos_y = avg_pos_all_y[kk]
         #  area, pt1_0, pt1_1, pt2_0, pt2_1, width, kappa_1, kappa_2
         tp = tissue_parameters_list[kk]
         points = [[tp[1], tp[3]], [tp[2], tp[4]]]
         save_path = folder_path.joinpath(file_name + "_%05d.png" % (kk)).resolve()
         title = "frame %05d" % (kk)
-        show_and_save_contour_and_width(img, cont, is_broken, is_closed, points, save_path, title)
+        broken_frame,closed_frame=show_and_save_contour_and_width(img, cont, is_broken, is_closed, points, save_path, title=title,
+                                        frame_num = kk,broken_frame=broken_frame,closed_frame=closed_frame,
+                                        pillars_pos_x=pillars_pos_x,pillars_pos_y=pillars_pos_y)
         file_name_list.append(save_path)
     return file_name_list
 
@@ -644,7 +709,10 @@ def run_segment(input_path: Path, output_path: Path, threshold_function_idx: int
     if pillar_mask_list:
         is_broken_list = com.check_broken_tissue_all(
             tissue_mask_list, wound_mask_list, True, zoom_fcn_idx,pillar_mask_list=pillar_mask_list)
-    is_broken_list = com.check_broken_tissue_all(tissue_mask_list, wound_mask_list, True, zoom_fcn_idx)
+        _ = save_all_numpy(output_path, "pillar", pillar_mask_list)
+    else:
+        is_broken_list = com.check_broken_tissue_all(
+            tissue_mask_list, wound_mask_list, True, zoom_fcn_idx)
     is_broken_path = save_list(output_path, "is_broken_vs_frame", is_broken_list)
     # check if the wound is closed
     is_closed_list = com.check_wound_closed_all(tissue_mask_list, wound_region_list, zoom_fcn_idx)
@@ -704,11 +772,13 @@ def run_seg_visualize(
     tissue_parameters_list: List,
     is_broken_list: List,
     is_closed_list: List,
-    fname: str
+    fname: str,
+    avg_pos_all_x: List = None,
+    avg_pos_all_y: List = None,
 ) -> tuple:
     """Given input and output information. Run segmentation visualization."""
     # path_list = save_all_img_with_contour(output_path, fname, img_list, contour_list, is_broken_list, is_closed_list)
-    path_list = save_all_img_with_contour_and_width(output_path, fname, img_list, contour_list, tissue_parameters_list, is_broken_list, is_closed_list)
+    path_list = save_all_img_with_contour_and_width(output_path, fname, img_list, contour_list, tissue_parameters_list, is_broken_list, is_closed_list,avg_pos_all_x,avg_pos_all_y)
     gif_path = create_gif(output_path, fname, path_list)
     return (path_list, gif_path)
 
@@ -759,16 +829,133 @@ def run_texture_tracking(input_path: Path, output_path: Path, threshold_function
     return tracker_x_forward, tracker_y_forward, tracker_x_reverse_forward, tracker_y_reverse_forward, wound_area_list, wound_masks_all, path_tx, path_ty, path_txr, path_tyr, path_wound_area, path_wound_masks
 
 
+def get_subplot_dims(n_plots:int) -> Tuple[int,int]:
+    """
+    Calculate optimal (rows, cols) for subplots to be as square as possible.
+    
+    Args:
+        n_plots (int): Number of plots needed
+        
+    Returns:
+        tuple: (rows, cols)
+    """
+    if n_plots == 0:
+        return (0, 0)
+    
+    # Start with square root as first approximation
+    sqrt_n = np.sqrt(n_plots)
+    rows = round(sqrt_n)
+    cols = np.ceil(n_plots / rows)
+    
+    # Check if we can get a more square arrangement
+    # by trying rows ±1 from our initial guess
+    candidates = []
+    for r in [rows - 1, rows, rows + 1]:
+        if r > 0:
+            c = np.ceil(n_plots / r)
+            aspect_ratio = max(r, c) / min(r, c)
+            candidates.append((aspect_ratio, r, c))
+    
+    # Select the arrangement with the most square aspect ratio
+    candidates.sort()
+    nrows = int(candidates[0][1])
+    ncols = int(candidates[0][2])
+    return (nrows, ncols)
+
+
+def show_and_save_relative_pillar_distances(
+    relative_distances:np.ndarray,
+    GPR_relative_distances:np.ndarray,
+    rel_dist_pair_names:np.ndarray,
+    output_path:Path
+):
+    """
+    Given relative distances and GPR smoothed distances, will plot and save the figure.
+    Args:
+        relative_distances (np.ndarray): Array of relative distances between pillars for each frame.
+        GPR_relative_distances (np.ndarray): GPR smoothed relative distances.
+        rel_dist_pair_names (np.ndarray): Names of the pillar pairs for which distances are computed.
+        output_path (Path): Path to save the figure.
+    Returns:
+        None
+    """
+    num_frames,num_pairs = relative_distances.shape
+    num_pt_GPR,_ = GPR_relative_distances.shape
+
+    frame_steps = np.linspace(0,num_frames-1,num_frames,dtype=int)
+    GPR_steps = np.linspace(0,num_pt_GPR-1,num_pt_GPR,dtype=int)
+
+    num_rows,num_cols=get_subplot_dims(num_pairs)
+
+    fig,axes = plt.subplots(nrows=num_rows,ncols=num_cols,figsize=(11,7))
+    axes = axes.flatten() if num_rows > 1 or num_cols > 1 else [axes]
+
+    for pair_ind in range(num_pairs):
+
+        axes[pair_ind].scatter(frame_steps,relative_distances[:,pair_ind],c='black',s=8,label='relative dist')
+        axes[pair_ind].plot(GPR_steps,GPR_relative_distances[:,pair_ind],c='red',linewidth=1,label='GPR smoothed')
+        axes[pair_ind].set_title(rel_dist_pair_names[pair_ind])
+        axes[pair_ind].set_xlabel('frame number')
+        axes[pair_ind].set_ylabel('distance between pillars (pixels)')
+        axes[pair_ind].grid('on',ls=':')
+    plt.suptitle('Relative Pillar Distances',fontsize=16)
+    plt.tight_layout()
+    plt.savefig(output_path.joinpath("relative_pillar_distances.png").resolve())
+    return
+
+
+def show_and_save_pillar_positions(
+    img: np.ndarray,
+    avg_pos_all_x: np.ndarray,
+    avg_pos_all_y: np.ndarray,
+    output_path: Path,
+    title: str = "Pillar Positions"
+):
+    """Given average pillar positions. Will plot and save the image with pillars."""
+    _,num_pillars = avg_pos_all_x.shape
+    dark2_colors = plt.get_cmap("Dark2")
+    colors = [dark2_colors(i) for i in np.linspace(0, 1, num_pillars)]
+    plt.figure()
+    plt.imshow(img, cmap=plt.cm.gray)
+    for pillar_ind in range(num_pillars):
+        plt.scatter(avg_pos_all_x[0, pillar_ind], avg_pos_all_y[0, pillar_ind], s=40, label=f'Pillar {pillar_ind}',color=colors[pillar_ind])
+    plt.title(title, fontdict={'fontsize': 16})
+    plt.legend(loc='upper right', fontsize=10)
+    plt.axis('off')
+    plt.tight_layout()
+    save_path = output_path.joinpath("pillar_positions.png").resolve()
+    plt.savefig(save_path)
+    plt.close()
+    return
+
+
 def run_texture_tracking_pillars(input_path: Path, output_path: Path, threshold_function_idx: int):
     img_list = read_all_tiff(input_path)
     first_img = img_list[0]
     pillar_mask_list = seg.get_pillar_mask_list(first_img, threshold_function_idx)
-    avg_disp_all_x, avg_disp_all_y = tt.perform_pillar_tracking(pillar_mask_list, img_list)
-    path_disp_x = output_path.joinpath("pillar_tracker_x.txt").resolve()
-    path_disp_y = output_path.joinpath("pillar_tracker_y.txt").resolve()
-    np.savetxt(str(path_disp_x), avg_disp_all_x)
-    np.savetxt(str(path_disp_y), avg_disp_all_y)
-    return avg_disp_all_x, avg_disp_all_y, path_disp_x, path_disp_y
+    avg_pos_all_x, avg_pos_all_y = tt.perform_pillar_tracking(pillar_mask_list, img_list)
+    pillar_mask_list, avg_pos_all_x, avg_pos_all_y = pp.rearrange_pillars_indexing(
+        pillar_mask_list,avg_pos_all_x,avg_pos_all_y
+    )
+    relative_distances,rel_dist_pair_names = pp.compute_relative_pillars_dist(avg_pos_all_x,avg_pos_all_y)
+    GPR_relative_distances = pp.smooth_relative_pillar_distances_with_GPR(relative_distances)
+    show_and_save_relative_pillar_distances(relative_distances,GPR_relative_distances,rel_dist_pair_names,output_path)
+    show_and_save_pillar_positions(first_img, avg_pos_all_x, avg_pos_all_y, output_path)
+
+    # save data
+    path_pos_x = output_path.joinpath("pillar_tracker_x.txt").resolve()
+    path_pos_y = output_path.joinpath("pillar_tracker_y.txt").resolve()
+    path_relative_distances = output_path.joinpath("relative_pillar_distances.txt").resolve()
+    path_relative_distances_GPR = output_path.joinpath("relative_pillar_distances_smoothed_GPR.txt").resolve()
+    path_relative_distances_pair_names = output_path.joinpath("relative_pillar_distances_pair_names.txt").resolve()
+
+    np.savetxt(str(path_pos_x), avg_pos_all_x)
+    np.savetxt(str(path_pos_y), avg_pos_all_y)
+    np.savetxt(str(path_relative_distances), relative_distances)
+    np.savetxt(str(path_relative_distances_GPR), GPR_relative_distances)
+    np.savetxt(str(path_relative_distances_pair_names), rel_dist_pair_names,fmt="%s")
+
+    return pillar_mask_list, avg_pos_all_x, avg_pos_all_y, path_pos_x, path_pos_y
 
 
 def show_and_save_tracking(
@@ -803,7 +990,7 @@ def show_and_save_tracking(
         plt.plot(tracker_x_forward[:, frame], tracker_y_forward[:, frame], "y.")
         plt.plot(tracker_x_reverse_forward[:, 0:frame].T, tracker_y_reverse_forward[:, 0:frame].T, "c-")
         plt.plot(tracker_x_reverse_forward[:, frame], tracker_y_reverse_forward[:, frame], "c.")
-    plt.title(title)
+    plt.title(title,fontdict={'fontsize': 16})
     plt.axis('off')
     plt.tight_layout()
     plt.savefig(save_path)
@@ -868,6 +1055,83 @@ def load_contour_coords(folder_path: Path):
     return contour_coords_list
 
 
+def combine_images(
+    folder_path:Path, 
+    output_path:Path,
+    image_type:str,
+    max_combined_width:int=2000,
+    individual_max_size:int=300):
+    """
+    Combine images from a folder into a grid, with frame numbers labeled.
+    
+    Args:
+        folder_path (str): Path to folder containing images
+        output_path (str): Path to save the combined image (default: "combined.png")
+        max_combined_width (int): Maximum width of the combined image (default: 2000)
+        individual_max_size (int): Maximum size of individual images in the combined output (default: 300)
+    """
+    
+    # Get all PNG files in the folder and sort by frame number
+    image_files = [f for f in os.listdir(folder_path) if f.endswith('.png') and "_all" not in f]
+    image_files.sort(key=lambda x: int(x.split('_')[-1].split('.')[0]))
+
+    # Obtain the sample name from the folder path
+    folder_path_str = str(folder_path)
+    segments = [s for s in folder_path_str.split('/') if s]  # Split and ignore empty strings
+    if "visualizations" not in segments:
+        raise ValueError("The folder path does not contain the 'visualizations' folder. This folder is where segmented images are stored for visualizations.")
+    else:
+        vis_index = segments.index("visualizations")
+        sample_name = segments[vis_index - 2]
+
+    output_filename = image_type +"_all_"+sample_name+".png"
+    
+    # Calculate grid dimensions (as close to square as possible)
+    num_images = len(image_files)
+    grid_cols = np.ceil(np.sqrt(num_images))
+    grid_rows = np.ceil(num_images / grid_cols)
+    
+    # Load first image to get dimensions
+    first_image = Image.open(os.path.join(folder_path, image_files[0]))
+    original_width, original_height = first_image.size
+    
+    # Calculate scaling factor to fit within individual_max_size while maintaining aspect ratio
+    scale_factor = min(individual_max_size / original_width, individual_max_size / original_height)
+    new_width = int(original_width * scale_factor)
+    new_height = int(original_height * scale_factor)
+    
+    # Calculate padding (10% of individual image width)
+    padding = int(new_width * 0.1)
+    
+    # Calculate combined image dimensions
+    combined_width = int(grid_cols * (new_width + padding) + padding)
+    combined_height = int(grid_rows * (new_height + padding) + padding)
+    
+    # Create blank combined image
+    combined_image = Image.new('RGB', (combined_width, combined_height), color='white')
+    
+    # Process each image
+    for i, image_file in enumerate(image_files):
+        # Calculate grid position
+        row = i // grid_cols
+        col = i % grid_cols
+        
+        # Open and resize image
+        img = Image.open(os.path.join(folder_path, image_file))
+        img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+        
+        # Calculate position in combined image
+        x = int(col * (new_width + padding) + padding)
+        y = int(row * (new_height + padding) + padding)
+        
+        # Paste image
+        combined_image.paste(img, (x, y))
+    
+    # Save combined image
+    combined_image.save(output_path.joinpath(output_filename).resolve())
+    return
+
+
 def run_all(folder_path: Path) -> List:
     """Given a folder path. Will read input, run code, generate all outputs."""
     time_all = []
@@ -894,6 +1158,17 @@ def run_all(folder_path: Path) -> List:
         _, _, _, _, _, _, _, _, _, img_list_fl, contour_list_fl, tissue_param_list_fl, is_broken_list_fl, is_closed_list_fl = run_segment(input_path, output_path, thresh_fcn, zoom_fcn)
         time_all.append(time.time())
         action_all.append("segmented fluorescent")
+    if input_dict["track_pillars_ph1"] is True:
+        output_path = output_path_dict["track_pillars_ph1_path"]
+        input_path = input_path_dict["ph1_images_path"]
+        img_list_ph1 = read_all_tiff(input_path)
+        thresh_fcn = seg.select_threshold_function(input_dict, False, False, True)
+        _,avg_pos_all_x,avg_pos_all_y,_, _ = run_texture_tracking_pillars(input_path, output_path, thresh_fcn)
+        time_all.append(time.time())
+        action_all.append("run pilalr texture tracking")
+    else:
+        avg_pos_all_x = None
+        avg_pos_all_y = None
     if input_dict["segment_ph1"] is True:
         input_path = input_path_dict["ph1_images_path"]
         output_path = output_path_dict["segment_ph1_path"]
@@ -919,7 +1194,8 @@ def run_all(folder_path: Path) -> List:
     if input_dict["seg_ph1_visualize"] is True:
         output_path = output_path_dict["segment_ph1_vis_path"]
         fname = "ph1_contour"
-        _ = run_seg_visualize(output_path, img_list_ph1, contour_list_ph1, tissue_param_list_ph1, is_broken_list_ph1, is_closed_list_ph1, fname)
+        _ = run_seg_visualize(output_path,img_list_ph1,contour_list_ph1,tissue_param_list_ph1,is_broken_list_ph1,is_closed_list_ph1,fname,avg_pos_all_x,avg_pos_all_y)
+        combine_images(folder_path=output_path,output_path=output_path,image_type=fname)
         # throw errors here if necessary segmentation data doesn't exist
         time_all.append(time.time())
         action_all.append("visualized ph1")
@@ -946,12 +1222,4 @@ def run_all(folder_path: Path) -> List:
         _ = run_texture_tracking_visualize(output_path, img_list_ph1, contour_list_ph1, is_broken_list_ph1, is_closed_list_ph1, tracker_x_forward, tracker_y_forward, tracker_x_reverse_forward, tracker_y_reverse_forward)
         time_all.append(time.time())
         action_all.append("visualized texture tracking")
-    if input_dict["track_pillars_ph1"] is True:
-        output_path = output_path_dict["track_pillars_ph1_path"]
-        input_path = input_path_dict["ph1_images_path"]
-        img_list_ph1 = read_all_tiff(input_path)
-        thresh_fcn = seg.select_threshold_function(input_dict, False, False, True)
-        _, _, _, _ = run_texture_tracking_pillars(input_path, output_path, thresh_fcn)
-        time_all.append(time.time())
-        action_all.append("run pilalr texture tracking")
     return time_all, action_all

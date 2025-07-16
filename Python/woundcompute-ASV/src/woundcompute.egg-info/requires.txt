@@ -39,3 +39,8 @@ tifffile==2022.8.12
 tomli==2.0.1
 trimesh==3.15.3
 zipp
+humanfriendly
+pandas
+openpyxl
+psutil
+pyqt5-tools

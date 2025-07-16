@@ -3,6 +3,7 @@ README.md
 pyproject.toml
 src/woundcompute/compute_values.py
 src/woundcompute/image_analysis.py
+src/woundcompute/post_process.py
 src/woundcompute/segmentation.py
 src/woundcompute/texture_tracking.py
 src/woundcompute.egg-info/PKG-INFO
@@ -12,5 +13,6 @@ src/woundcompute.egg-info/requires.txt
 src/woundcompute.egg-info/top_level.txt
 tests/test_compute_values.py
 tests/test_image_analysis.py
+tests/test_post_process.py
 tests/test_segmentation.py
 tests/test_texture_tracking.py

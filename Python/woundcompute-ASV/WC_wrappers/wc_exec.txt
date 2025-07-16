@@ -1,0 +1,10 @@
+@echo off
+rem Simple one-line approach using conda run
+
+rem Define paths
+set CONDAPATH=C:\ProgramData\Anaconda3
+set ENVNAME=wound-compute-env
+set SCRIPTDIR=%~dp0
+
+rem Run Python script directly in the specified environment
+%CONDAPATH%\Scripts\conda.exe run -n %ENVNAME% python "%SCRIPTDIR%wc_mainp.py"

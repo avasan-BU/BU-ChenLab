@@ -1,0 +1,6 @@
+woundcompute@ git+https://github.com/elejeune11/woundcompute.git
+pandas
+humanfriendly
+openpyxl
+psutil
+PyQt5
