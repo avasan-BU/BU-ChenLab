@@ -1,0 +1,12 @@
+LICENSE
+README.md
+pyproject.toml
+src/woundcomputegui/data_management.py
+src/woundcomputegui/main_gui.py
+src/woundcomputegui/wc_functions.py
+src/woundcomputegui/wellplate_gui.py
+src/woundcomputegui.egg-info/PKG-INFO
+src/woundcomputegui.egg-info/SOURCES.txt
+src/woundcomputegui.egg-info/dependency_links.txt
+src/woundcomputegui.egg-info/requires.txt
+src/woundcomputegui.egg-info/top_level.txt
